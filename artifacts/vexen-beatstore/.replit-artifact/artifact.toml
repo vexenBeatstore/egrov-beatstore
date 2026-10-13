@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "VEXEN BeatStore"
+description = "Адаптивный интернет-магазин музыкальных битов с каталогом, примерами лицензий и корзиной. Первая версия предназначена для просмотра и будет расширяться реальными данными и заказами."
+version = "1.0.0"
+id = "artifacts/vexen-beatstore"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22581
+
+[services.development]
+run = "pnpm --filter @workspace/vexen-beatstore run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vexen-beatstore", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/vexen-beatstore/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22581"
+BASE_PATH = "/"

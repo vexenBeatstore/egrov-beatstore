@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Email and password authentication
+  - name: beats
+    description: Published beat catalog
+  - name: licenses
+    description: Active license tiers
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Create a user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "201":
+          description: Account created and session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Invalid registration details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "409":
+          description: Email address is already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "429":
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Start an authenticated session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated user and session cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "401":
+          description: Email or password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "429":
+          description: Too many sign-in attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Revoke the current session
+      responses:
+        "200":
+          description: Session revoked and cookie cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResult"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /beats:
+    get:
+      operationId: listBeats
+      tags: [beats]
+      summary: Search and filter published beats
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+        - name: genre
+          in: query
+          schema:
+            type: string
+            maxLength: 60
+        - name: minBpm
+          in: query
+          schema:
+            type: integer
+            minimum: 20
+            maximum: 300
+        - name: maxBpm
+          in: query
+          schema:
+            type: integer
+            minimum: 20
+            maximum: 300
+        - name: maxPriceMinor
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [featured, price-asc, price-desc, bpm-asc]
+      responses:
+        "200":
+          description: Published beats matching the query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeatList"
+        "400":
+          description: Invalid catalog filter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /beats/{slug}:
+    get:
+      operationId: getBeat
+      tags: [beats]
+      summary: Get a published beat and its active licenses
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Published beat details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BeatDetail"
+        "404":
+          description: Beat not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /licenses:
+    get:
+      operationId: listLicenses
+      tags: [licenses]
+      summary: Get example license tiers and current prices
+      responses:
+        "200":
+          description: Active license tiers for published beats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LicenseSummaryList"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorMessage:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    RegistrationInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+      required: [email, password]
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required: [email, password]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, admin]
+        emailVerifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, email, role, emailVerifiedAt, createdAt]
+    LogoutResult:
+      type: object
+      properties:
+        loggedOut:
+          type: boolean
+      required: [loggedOut]
+    Beat:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        genre:
+          type: string
+        bpm:
+          type: integer
+        key:
+          type: string
+        description:
+          type: string
+        coverUrl:
+          type: ["string", "null"]
+          format: uri
+        previewUrl:
+          type: ["string", "null"]
+          format: uri
+        startingPriceMinor:
+          type: ["integer", "null"]
+        currency:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - slug
+        - title
+        - genre
+        - bpm
+        - key
+        - description
+        - coverUrl
+        - previewUrl
+        - startingPriceMinor
+        - currency
+        - createdAt
+    BeatList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Beat"
+    BeatLicense:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        priceMinor:
+          type: integer
+        currency:
+          type: string
+      required: [id, name, description, priceMinor, currency]
+    BeatDetail:
+      type: object
+      properties:
+        beat:
+          $ref: "#/components/schemas/Beat"
+        licenses:
+          type: array
+          items:
+            $ref: "#/components/schemas/BeatLicense"
+      required: [beat, licenses]
+    LicenseSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        startingPriceMinor:
+          type: integer
+        currency:
+          type: string
+      required: [name, description, startingPriceMinor, currency]
+    LicenseSummaryList:
+      type: array
+      items:
+        $ref: "#/components/schemas/LicenseSummary"
+
