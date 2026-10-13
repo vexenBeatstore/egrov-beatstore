@@ -4,8 +4,8 @@ pages_build_output_dir = "./public"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "vexen-beatstore-site-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "vexen-beatstore-db"
+database_id = "1951eed4-69ac-422a-97cc-1971ba71179c"
 
 [[r2_buckets]]
 binding = "AUDIO"
