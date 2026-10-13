@@ -1,0 +1,28 @@
+# VEXEN BeatStore — запуск без командной строки
+
+Сайт оформлен в чёрном и кислотно-зелёном цветах логотипа VEXEN. Файлы проекта можно загрузить через браузер в GitHub и подключить к Cloudflare Pages.
+
+## Важно
+- Не загружайте банковские реквизиты, токены бота или другие секреты в GitHub.
+- Для рабочей версии настройте в Cloudflare D1 базу, выполните SQL из `schema.sql` через консоль D1 в панели Cloudflare и укажите Database ID в настройках проекта.
+- Создайте R2 bucket и привяжите его к проекту как `AUDIO`.
+- Установите секреты и переменные окружения, перечисленные ниже, в Cloudflare Dashboard.
+- Telegram Login Widget требует привязки домена через @BotFather `/setdomain`.
+
+## Публикация через браузер
+1. Откройте GitHub и создайте новый репозиторий `vexen-beatstore-site`.
+2. Нажмите **Add file → Upload files**, загрузите содержимое этой папки (не сам ZIP) и нажмите **Commit changes**.
+3. В Cloudflare Dashboard откройте **Workers & Pages → Create → Pages → Connect to Git** и выберите репозиторий.
+4. Для проекта без сборщика укажите build command пустым, а build output directory — `public`. Если проект создаётся как Pages Functions, убедитесь, что папка `functions` находится в корне репозитория.
+5. В Cloudflare D1 создайте отдельную базу, откройте её Console и вставьте содержимое `schema.sql`. Затем замените `REPLACE_WITH_D1_DATABASE_ID` в `wrangler.toml` на Database ID базы.
+6. Создайте R2 bucket `vexen-beatstore-audio` или измените имя в `wrangler.toml`, чтобы оно совпадало с созданным bucket.
+7. В настройках проекта задайте переменные/секреты из раздела **Environment variables** ниже и выполните повторное развёртывание.
+
+## Переменные и секреты
+Сверьтесь с обращениями `env.` в `functions/api/[[path]].js`. Обычно нужны: `ADMIN_TELEGRAM_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_BOT_TOKEN` для проверки авторизации, `BANK_RECIPIENT` и `BANK_DETAILS`. Добавляйте секреты через Cloudflare Dashboard, а не в исходный код.
+
+## Локальные настройки
+Файл `.dev.vars.example` — пример локальных переменных. Не публикуйте реальный `.dev.vars`.
+
+## Безопасность и платежи
+Оплата подтверждается администратором вручную. Не выдавайте файлы только на основании слов покупателя — сверяйте поступление денег. Перед реальным запуском проверьте Telegram-авторизацию, лимиты загрузки, CORS и доступ к R2.

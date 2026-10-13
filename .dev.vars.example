@@ -1,0 +1,8 @@
+# Copy to .dev.vars for local testing. Never commit the real .dev.vars file.
+BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN"
+ADMIN_TELEGRAM_ID="971616343"
+TELEGRAM_BOT_USERNAME="VEXENBeatStoreBot"
+BANK_DETAILS="УКАЖИТЕ РЕКВИЗИТЫ ДЛЯ ПЕРЕВОДА"
+PAYMENT_RECIPIENT="VEXEN"
+SITE_ORIGIN="http://localhost:8788"
+SESSION_SECRET="REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
