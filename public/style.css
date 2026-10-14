@@ -721,3 +721,35 @@ main,footer,.topbar{min-width:0}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* EGROV hero layout refinement: wider section, copy shifted left, visual shifted right */
+.hero.hero-text-only{
+  width:100%;
+  max-width:1800px;
+  margin-inline:auto;
+  padding-inline:clamp(22px,4vw,72px);
+  grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);
+  column-gap:clamp(28px,5vw,100px);
+}
+.hero-text-only .hero-copy{
+  max-width:900px;
+  justify-self:start;
+  width:100%;
+}
+.hero-text-only .hero h1{
+  max-width:100%;
+  text-wrap:balance;
+}
+.hero-text-only .hero-text{max-width:680px}
+.hero-side-note{
+  justify-self:end;
+  width:100%;
+  max-width:500px;
+  transform:translateX(clamp(0px,1.5vw,24px));
+}
+.hero-signature-mark{width:100%;max-width:480px}
+@media(max-width:700px){
+  .hero.hero-text-only{grid-template-columns:1fr;column-gap:0;padding-inline:22px}
+  .hero-text-only .hero-copy{max-width:100%}
+}
