@@ -665,48 +665,94 @@ async function handle(request, env) {
     return json({ beats: results });
   }
 
-  /* ---------------- ADD BEAT ---------------- */
+  
+  /* ---------------- UPLOAD ONE FILE ---------------- */
 
-  if (path === "admin/beats" && method === "POST") {
+  if (path === "admin/upload" && method === "POST") {
     let form;
 
     try {
       form = await request.formData();
     } catch {
-      return fail("Ожидалась форма с файлами.");
+      return fail("Не удалось прочитать файл.");
     }
 
-    const title = String(form.get("title") || "").trim();
+    const file = form.get("file");
+    const type = String(form.get("type") || "");
 
-    if (!title) return fail("Название бита обязательно.");
+    const allowed = {
+      cover: "covers",
+      demo: "demos",
+      mp3_file: "masters",
+      wav_file: "masters",
+      stems_file: "masters",
+    };
 
-    let cover_key = null;
-    let demo_key = null;
-    let mp3_key = null;
-    let wav_key = null;
-    let stems_key = null;
+    if (!allowed[type]) {
+      return fail("Неизвестный тип файла.");
+    }
+
+    if (!file || typeof file === "string" || !file.size) {
+      return fail("Файл не выбран.");
+    }
 
     try {
-      cover_key = await storageUpload(form.get("cover"), env, "covers");
-      demo_key = await storageUpload(form.get("demo"), env, "demos");
-      mp3_key = await storageUpload(form.get("mp3_file"), env, "masters");
-      wav_key = await storageUpload(form.get("wav_file"), env, "masters");
-      stems_key = await storageUpload(form.get("stems_file"), env, "masters");
+      const key = await storageUpload(file, env, allowed[type]);
+      return json({ ok: true, key });
     } catch (error) {
-      console.error("Beat upload error:", error);
-      return fail(error.message || "Не удалось загрузить файлы.");
+      console.error("Single file upload error:", error);
+      return fail(error.message || "Не удалось загрузить файл.");
+    }
+  }
+
+  /* ---------------- ADD BEAT ---------------- */
+
+  if (path === "admin/beats" && method === "POST") {
+    let data;
+
+    try {
+      data = await request.json();
+    } catch {
+      return fail("Некорректные данные бита.");
+    }
+
+    const title = String(data.title || "").trim();
+
+    if (!title) {
+      return fail("Название бита обязательно.");
     }
 
     const prices = {
-      mp3: Math.max(0, Math.round(Number(form.get("mp3_price") || 500))),
-      wav: Math.max(0, Math.round(Number(form.get("wav_price") || 1000))),
-      stems: Math.max(0, Math.round(Number(form.get("stems_price") || 2000))),
+      mp3: Math.max(0, Math.round(Number(data.mp3_price) || 0)),
+      wav: Math.max(0, Math.round(Number(data.wav_price) || 0)),
+      stems: Math.max(0, Math.round(Number(data.stems_price) || 0)),
     };
 
     const discount = Math.min(
       90,
-      Math.max(0, Math.round(Number(form.get("discount") || 0)))
+      Math.max(0, Math.round(Number(data.discount) || 0))
     );
+
+    const fileKey = (value, prefix) => {
+      if (!value) return null;
+      const key = String(value);
+      if (!key.startsWith(prefix + "/")) {
+        throw new Error("Некорректный путь загруженного файла.");
+      }
+      return key;
+    };
+
+    let coverKey, demoKey, mp3Key, wavKey, stemsKey;
+
+    try {
+      coverKey = fileKey(data.cover_key, "covers");
+      demoKey = fileKey(data.demo_key, "demos");
+      mp3Key = fileKey(data.mp3_key, "masters");
+      wavKey = fileKey(data.wav_key, "masters");
+      stemsKey = fileKey(data.stems_key, "masters");
+    } catch (error) {
+      return fail(error.message);
+    }
 
     await env.DB.prepare(
       `INSERT INTO beats
@@ -717,16 +763,16 @@ async function handle(request, env) {
     )
       .bind(
         title,
-        String(form.get("artist") || "VEXEN"),
-        String(form.get("genre") || "Trap"),
-        Math.max(1, Math.round(Number(form.get("bpm") || 140))),
-        String(form.get("musical_key") || "Am"),
-        String(form.get("description") || ""),
-        cover_key,
-        demo_key,
-        mp3_key,
-        wav_key,
-        stems_key,
+        String(data.artist || "VEXEN"),
+        String(data.genre || "Trap"),
+        Math.max(1, Math.round(Number(data.bpm) || 140)),
+        String(data.musical_key || "Am"),
+        String(data.description || ""),
+        coverKey,
+        demoKey,
+        mp3Key,
+        wavKey,
+        stemsKey,
         prices.mp3,
         prices.wav,
         prices.stems,
@@ -736,6 +782,7 @@ async function handle(request, env) {
 
     return json({ ok: true });
   }
+
 
   /* ---------------- EDIT / DELETE BEAT ---------------- */
 
