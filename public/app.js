@@ -67,7 +67,7 @@ function selectBeatForPlayer(beat,autoplay=true){
   const audio=$('#globalAudio'),url=media(beat.demo_key);const same=audioUI.beatId===beat.id;
   if(!same){audio.pause();audioUI.beatId=beat.id;audio.src=url;audio.load();
     $('#globalTrackTitle').textContent=beat.title||'Без названия';$('#globalTrackArtist').textContent=beat.artist||'VEXEN';
-    $('#globalTrackCover').innerHTML=beat.cover_key?`<img src="${media(beat.cover_key)}" alt="">`:'<span>VX</span>';
+    
     $('#globalPlayer').classList.add('has-track');$('#globalPlayerStatus').textContent='ЗАГРУЖАЕМ ДЕМО';$('#globalCurrent').textContent='0:00';$('#globalDuration').textContent='--:--';
     loadWaveform(url);
   }
@@ -91,21 +91,15 @@ function renderCatalog(){
   const list=state.beats.filter(b=>(!g||b.genre===g)&&(!q||`${b.title} ${b.genre} ${b.artist} ${b.description}`.toLowerCase().includes(q)));
   const grid=$('#beatGrid');
   $('#emptyState').classList.toggle('hidden',list.length>0);
+  $('#beatCount').textContent=String(list.length).padStart(2,'0');
   if(!list.length){grid.innerHTML='';return}
-  grid.innerHTML=list.map(b=>{
+  grid.innerHTML=list.map((b,i)=>{
     const licenses=available(b);
-    return `<article class="beat-card"><div class="cover">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="Обложка ${esc(b.title)}">`:`<span class="cover-mark">VEXEN</span>`}<span class="cover-id">VX / ${String(b.id).padStart(3,'0')}</span><span class="cover-genre">${esc(b.genre)}</span></div><div class="beat-info"><div class="beat-title-row"><div><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div></div>${Number(b.discount)>0?`<span class="discount-badge">−${Number(b.discount)}%</span>`:''}</div><div class="beat-meta"><span>${esc(b.bpm)} BPM</span><span>${esc(b.musical_key)}</span><span>${esc(b.genre)}</span></div>${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Слушать ${esc(b.title)}">▶ <span>СЛУШАТЬ ДЕМО</span></button>`:`<p class="hint">Демо пока не загружено</p>`}<div class="license-row"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}">${licenses.map(k=>`<option value="${k}">${({mp3:'MP3 License',wav:'WAV License',stems:'WAV + Stems'})[k]} — ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет файлов'}</span></div><button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ ДОБАВИТЬ В КОРЗИНУ</button></div></article>`
+    return `<article class="beat-row"><div class="track-identity"><div class="track-thumb">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="">`:`<span>VX</span>`}<span class="track-number">${String(i+1).padStart(2,'0')}</span></div><div class="track-copy"><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div><div class="track-mobile-meta">${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM</div></div></div><div class="track-details"><span>${esc(b.genre||'—')}</span><b>${esc(b.bpm||'—')} BPM</b><span>${esc(b.musical_key||'—')}</span></div><div class="track-license"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}" ${licenses.length?'':'disabled'}>${licenses.map(k=>`<option value="${k}">${({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'})[k]} · ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет лицензий'}</span></div><div class="track-actions">${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Слушать ${esc(b.title)}">▶</button>`:`<span class="no-demo">НЕТ ДЕМО</span>`}<button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ <span>В КОРЗИНУ</span></button></div></article>`
   }).join('');
   $$('[data-play-beat]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.playBeat));selectBeatForPlayer(b,true)}));
-  $$('.license-select',grid).forEach(s=>s.addEventListener('change',()=>{
-    const b=state.beats.find(x=>x.id===Number(s.dataset.beat));
-    $('.license-price',s.closest('.beat-info')).textContent=rub(finalPrice(b,s.value));
-  }));
-  $$('[data-add]',grid).forEach(btn=>btn.addEventListener('click',()=>{
-    const b=state.beats.find(x=>x.id===Number(btn.dataset.add));
-    const select=$(`.license-select[data-beat="${b.id}"]`,grid);
-    addToCart(b,select.value);
-  }));
+  $$('.license-select',grid).forEach(s=>s.addEventListener('change',()=>{const b=state.beats.find(x=>x.id===Number(s.dataset.beat));$('.license-price',s.closest('.track-license')).textContent=rub(finalPrice(b,s.value));}));
+  $$('[data-add]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.add));const select=$(`.license-select[data-beat="${b.id}"]`,grid);addToCart(b,select.value);}));
 }
 async function loadCatalog(){
   try{
@@ -113,6 +107,8 @@ async function loadCatalog(){
     state.beats=data.beats||[];
     const genres=[...new Set(state.beats.map(b=>b.genre).filter(Boolean))].sort();
     $('#genreFilter').innerHTML='<option value="">Все жанры</option>'+genres.map(g=>`<option>${esc(g)}</option>`).join('');
+    $('#genreSidebar').innerHTML=genres.map(g=>`<button class="genre-nav" data-genre="${esc(g)}">${esc(g)}<span>↗</span></button>`).join('')||'<span class="sidebar-empty">Жанры появятся после загрузки битов</span>';
+    $$('[data-genre]').forEach(btn=>btn.addEventListener('click',()=>{ $('#genreFilter').value=btn.dataset.genre;$$('[data-genre]').forEach(x=>x.classList.toggle('active',x===btn));renderCatalog();}));
     renderCatalog();
   }catch(e){
     $('#beatGrid').innerHTML=`<div class="empty">Не удалось загрузить каталог: ${esc(e.message)}. Проверь, создана ли база D1 и применена ли schema.sql.</div>`;
