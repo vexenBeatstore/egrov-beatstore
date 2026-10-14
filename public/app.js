@@ -23,8 +23,7 @@ function toast(message,error=false){
 function media(key){return key?'/api/media?key='+encodeURIComponent(key):''}
 function finalPrice(beat,license){
   const p=Number(beat[license+'_price'])||0;
-  const d=Math.min(90,Math.max(0,Number(beat.discount)||0));
-  return Math.round(p*(100-d)/100);
+  return p;
 }
 function available(beat){return ['mp3','wav','stems'].filter(k=>beat['has_'+k] || beat[k+'_key'])}
 function timeLabel(value){
@@ -104,7 +103,7 @@ function renderCatalog(){
   if(!list.length){grid.innerHTML='';return}
   grid.innerHTML=list.map((b,i)=>{
     const licenses=available(b);
-    return `<article class="beat-row"><div class="track-identity"><span class="track-number">${String(i+1).padStart(2,'0')}</span><div class="track-copy"><h3 class="beat-title">${esc(b.title)}</h3><div class="track-mobile-meta">${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM</div></div></div><div class="track-details"><span>${esc(b.genre||'—')}</span><b>${esc(b.bpm||'—')} BPM</b><span>${esc(b.musical_key||'—')}</span></div><div class="track-license"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}" ${licenses.length?'':'disabled'}>${licenses.map(k=>`<option value="${k}">${({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'})[k]} · ${rub(finalPrice(b,k))}</option>`).join('')}</select></div><div class="track-actions">${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Воспроизвести ${esc(b.title)}" title="Воспроизвести">▶</button>`:`<span class="no-demo">НЕТ ДЕМО</span>`}<button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ <span>В КОРЗИНУ</span></button></div></article>`
+    return `<article class="beat-row"><div class="track-identity"><span class="track-number">${String(i+1).padStart(2,'0')}</span><div class="track-copy"><h3 class="beat-title">${esc(b.title)}</h3><div class="track-mobile-meta">${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM</div><p class="track-description">${esc(b.description||'Описание не добавлено. Посмотри описание в карточке позже или уточни детали у VEXEN.')}</p></div></div><div class="track-details"><span>${esc(b.genre||'—')}</span><b>${esc(b.bpm||'—')} BPM</b><span>${esc(b.musical_key||'—')}</span></div><div class="track-license"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}" ${licenses.length?'':'disabled'}>${licenses.map(k=>`<option value="${k}">${({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'})[k]} · ${rub(finalPrice(b,k))}</option>`).join('')}</select></div><div class="track-actions">${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Воспроизвести ${esc(b.title)}" title="Воспроизвести">▶</button>`:`<span class="no-demo">НЕТ ДЕМО</span>`}<button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ <span>В КОРЗИНУ</span></button></div></article>`
   }).join('');
   $$('[data-play-beat]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.playBeat));selectBeatForPlayer(b,true)}));
   $$('[data-add]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.add));const select=$(`.license-select[data-beat="${b.id}"]`,grid);addToCart(b,select.value);}));
@@ -252,7 +251,7 @@ async function loadAdminOrders(){
 async function loadAdminBeats(){
   try{
     const d=await api('admin/beats');
-    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map((b,i)=>`<article class="admin-beat"><div class="admin-beat-art" aria-hidden="true"><span>${String(i+1).padStart(2,'0')}</span><i class="mini-wave"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i></div><div class="admin-beat-main"><div class="admin-beat-titleline"><strong>${esc(b.title)}</strong><span class="admin-beat-status ${b.active?'is-live':'is-hidden'}"><i></i>${b.active?'В продаже':'Снят с продажи'}</span></div><small>${esc(b.genre||'Без жанра')} <span class="meta-dot">·</span> ${b.bpm||'—'} BPM <span class="meta-dot">·</span> ${esc(b.musical_key||'—')} <span class="meta-dot">·</span> #${b.id}</small><div class="admin-beat-prices"><span>MP3 <b>${Number(b.mp3_price||0).toLocaleString('ru-RU')} ₽</b></span><span>WAV <b>${Number(b.wav_price||0).toLocaleString('ru-RU')} ₽</b></span><span>STEMS <b>${Number(b.stems_price||0).toLocaleString('ru-RU')} ₽</b></span>${Number(b.discount)>0?`<em>−${Number(b.discount)}%</em>`:''}</div></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Снять с продажи</button>`:`<button class="small-btn relist-btn" data-show="${b.id}">Выгрузить повторно ↗</button>`}</div></article>`).join('')+'</div>':'<div class="admin-empty"><span>♪</span><strong>Каталог пока пуст</strong><p>Добавь первый бит — он появится здесь отдельной строкой.</p></div>';
+    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map(b=>`<div class="admin-beat"><div><strong>#${b.id} · ${esc(b.title)}</strong><small>${esc(b.genre)} · ${b.bpm} BPM · ${b.active?'в продаже':'снят с продажи'}</small></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Скрыть</button>`:`<button class="small-btn relist-btn" data-show="${b.id}">Выгрузить повторно ↗</button>`}</div></div>`).join('')+'</div>':'<p class="hint">Битов пока нет. Добавь первый бит во вкладке «Добавить бит».</p>';
     $$('[data-edit]').forEach(b=>b.onclick=()=>editBeat(d.beats.find(x=>x.id===Number(b.dataset.edit))));
     $$('[data-hide]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.hide,false));
     $$('[data-show]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.show,true));
@@ -275,10 +274,9 @@ async function editBeat(b){
   const mp3=prompt('Цена MP3 (₽):',b.mp3_price);if(mp3===null)return;
   const wav=prompt('Цена WAV (₽):',b.wav_price);if(wav===null)return;
   const stems=prompt('Цена WAV + Stems (₽):',b.stems_price);if(stems===null)return;
-  const discount=prompt('Скидка % (0–90):',b.discount);if(discount===null)return;
   const description=prompt('Описание:',b.description||'');if(description===null)return;
   try{
-    await api(`admin/beats/${b.id}`,{method:'PUT',body:JSON.stringify({...b,title,genre,bpm:Number(bpm),musical_key:key,mp3_price:Number(mp3),wav_price:Number(wav),stems_price:Number(stems),discount:Number(discount),description})});
+    await api(`admin/beats/${b.id}`,{method:'PUT',body:JSON.stringify({...b,title,genre,bpm:Number(bpm),musical_key:key,mp3_price:Number(mp3),wav_price:Number(wav),stems_price:Number(stems),description})});
     toast('Бит обновлён');
     loadAdminBeats();
     loadCatalog();
@@ -299,6 +297,22 @@ $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
 
+function setUploadStep(step){
+  const current=Math.min(3,Math.max(1,Number(step)||1));
+  $$('[data-step-panel]').forEach(panel=>{const active=Number(panel.dataset.stepPanel)===current;panel.classList.toggle('hidden',!active);$$('input,textarea,select',panel).forEach(field=>{if(field.dataset.stepRequired==='1'||field.required)field.dataset.stepRequired='1';field.required=active&&field.dataset.stepRequired==='1'});});
+  $$('[data-step-indicator]').forEach(item=>{const n=Number(item.dataset.stepIndicator);item.classList.toggle('active',n===current);item.classList.toggle('complete',n<current)});
+  const form=$('#beatForm');if(form)form.dataset.currentStep=String(current);
+}
+$$('[data-next-step]').forEach(btn=>btn.addEventListener('click',()=>{
+  const current=Number($('#beatForm')?.dataset.currentStep||1);
+  const panel=$(`[data-step-panel="${current}"]`);
+  const fields=$$('input,textarea,select',panel).filter(el=>el.required);
+  for(const field of fields){if(!field.checkValidity()){field.reportValidity();return}}
+  setUploadStep(btn.dataset.nextStep);
+}));
+$$('[data-prev-step]').forEach(btn=>btn.addEventListener('click',()=>setUploadStep(btn.dataset.prevStep)));
+setUploadStep(1);
+
 const demoInput = document.querySelector('#beatForm input[name=demo]');
 if (demoInput) demoInput.addEventListener('change', () => {
   const file = demoInput.files && demoInput.files[0];
@@ -310,6 +324,7 @@ if (demoInput) demoInput.addEventListener('change', () => {
 $('#beatForm').addEventListener('submit', async e => {
   e.preventDefault();
   const form = e.currentTarget;
+  if(Number(form.dataset.currentStep||1)!==3){setUploadStep(3);return;}
   const msg = $('#beatFormMessage');
   const submitButton = $('button[type="submit"]', form);
   submitButton.disabled = true;
@@ -333,8 +348,7 @@ $('#beatForm').addEventListener('submit', async e => {
       description: getValue('description'),
       mp3_price: Number(getValue('mp3_price')) || 0,
       wav_price: Number(getValue('wav_price')) || 0,
-      stems_price: Number(getValue('stems_price')) || 0,
-      discount: Number(getValue('discount')) || 0
+      stems_price: Number(getValue('stems_price')) || 0
     };
 
     if (!fields.title) throw new Error('Укажи название бита.');
@@ -362,7 +376,8 @@ $('#beatForm').addEventListener('submit', async e => {
     await api('admin/beats', {method:'POST', body:JSON.stringify({...fields,...uploaded})});
 
     form.reset();
-    const defaults = {genre:'Trap',bpm:140,musical_key:'Am',mp3_price:500,wav_price:1000,stems_price:2000,discount:0};
+    setUploadStep(1);
+    const defaults = {genre:'Trap',bpm:140,musical_key:'Am',mp3_price:500,wav_price:1000,stems_price:2000};
     for (const [name,value] of Object.entries(defaults)) {
       const field = form.elements.namedItem(name);
       if (field) field.value = value;
