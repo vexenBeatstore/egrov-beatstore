@@ -225,17 +225,10 @@ function licenseInfo(beat, license) {
   const x = map[license];
   if (!x || Number(x[1]) <= 0) return null;
 
-  const discount = Math.min(
-    90,
-    Math.max(0, Number(beat.discount) || 0)
-  );
-
+  // Discounts are disabled in VEXEN BeatStore: license prices are fixed.
   return {
     label: x[0],
-    price: Math.max(
-      0,
-      Math.round(Number(x[1]) * (100 - discount) / 100)
-    ),
+    price: Math.max(0, Math.round(Number(x[1]) || 0)),
     file_key: null,
   };
 }
@@ -709,10 +702,8 @@ async function handle(request, env) {
       stems: Math.max(0, Math.round(Number(data.stems_price) || 0)),
     };
 
-    const discount = Math.min(
-      90,
-      Math.max(0, Math.round(Number(data.discount) || 0))
-    );
+    // Keep the legacy database column at zero; discounts are no longer used.
+    const discount = 0;
 
     const fileKey = (value, prefix) => {
       if (!value) return null;
@@ -804,7 +795,7 @@ async function handle(request, env) {
         Math.max(0, Math.round(Number(data.mp3_price) || 0)),
         Math.max(0, Math.round(Number(data.wav_price) || 0)),
         Math.max(0, Math.round(Number(data.stems_price) || 0)),
-        Math.min(90, Math.max(0, Math.round(Number(data.discount) || 0))),
+        0,
         data.active === false ? 0 : 1,
         Number(beatMatch[1])
       )

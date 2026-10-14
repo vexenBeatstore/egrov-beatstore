@@ -453,58 +453,110 @@ html{scroll-padding-top:82px}body{font-family:'DM Sans',system-ui,-apple-system,
 @media(max-width:520px){.beat-grid{grid-template-columns:1fr;gap:12px}.beat-info{padding:15px}.about-section{padding:48px 20px}.about-section h2{font-size:31px}.global-player{grid-template-columns:42px minmax(0,1fr);gap:10px}.global-wave-area,.global-volume-wrap{display:none}.global-track-copy strong{font-size:12px}footer{gap:12px}.footer .brand-logo{width:96px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
-/* VEXEN / NUCLEAR BLACK — final palette and guided upload flow */
-:root{--bg:#000;--panel:#050505;--panel2:#090909;--line:#202020;--text:#f7f9f2;--muted:#a1a1a1;--acid:#dfff00;--acid2:#c7ef00;--danger:#ff5252}
-html,body{background:#000;color:var(--text)}
-.topbar{background:#000f;border-bottom-color:#1b1b1b}
-.hero,.hero-signature-mark,.catalog-section,.market-sidebar,.about-section,footer,.global-player{background-color:#000}
-.search-wrap,.catalog-tools select,.sort-control select,.track-row,.beat-row,.track-card,.audio-player,.license-select,.license-row select,.cart-drawer,.drawer-panel,.modal-card{background:#050505!important}
-.track-row,.beat-row,.track-card,.search-wrap,.catalog-tools select,.sort-control select,.audio-player,.license-select,.license-row select{border-color:#202020!important}
-.track-row:hover,.beat-row:hover,.track-card:hover{background:#080808!important;border-color:#dfff00a0!important}
-.market-sidebar{border-color:#1a1a1a}
-.genre-nav.active{background:#dfff0012!important;border-color:#dfff0060!important;color:#dfff00!important}
-.search-wrap:focus-within{border-color:#dfff00!important;box-shadow:0 0 0 3px #dfff000e!important}
-.player-play,.global-play,.toast,.admin-tabs .tab.active,.small-btn.relist-btn{background:var(--acid)!important;border-color:var(--acid)!important;color:#000!important}
-.player-play:hover,.global-play:hover,.add-btn:hover,.small-btn.relist-btn:hover{background:#efff73!important;color:#000!important}
-.player-label,.track-number,.player-seek,.player-volume,.global-waveform,.upload-icon,.upload-symbol,.text-btn:hover,.copy-btn,.download-link{color:var(--acid);accent-color:var(--acid)}
-.add-btn{background:#000!important;border-color:#dfff006b!important;color:var(--acid)!important}
-.add-btn:hover{background:var(--acid)!important;color:#000!important}
-.status-dot{background:var(--acid)!important;box-shadow:0 0 12px #dfff0066!important}
-.track-description{margin:8px 0 0;max-width:650px;color:#b7b7b7;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
-.track-copy{min-width:0}
-#adminModal .modal-backdrop{background:#000f!important}
-#adminModal .admin-card{background:#030303!important;border-color:#282828!important;box-shadow:0 30px 110px #000!important}
-#adminModal #adminLogin,#adminModal .upload-panel,#adminModal .admin-beat,#adminModal .admin-order{background:#070707!important;border-color:#202020!important}
-#adminModal .admin-tabs{background:#000!important;border-color:#222!important}
-#adminModal .admin-tabs .tab{color:#aaa;background:transparent}
-#adminModal .admin-tabs .tab:hover{background:#101010;color:#fff}
-#adminModal .admin-tabs .tab.active{background:var(--acid)!important;color:#000!important}
-#adminModal .admin-tabs .text-btn:hover{background:#111;color:var(--acid)}
-#adminModal .admin-form input,#adminModal .admin-form select,#adminModal .admin-form textarea,#adminModal .modal-card input,#adminModal .modal-card select,#adminModal .modal-card textarea{background:#000!important;border-color:#282828!important;color:#f7f9f2}
-#adminModal .admin-form input:focus,#adminModal .admin-form textarea:focus,#adminModal .admin-form select:focus{border-color:var(--acid)!important;box-shadow:0 0 0 3px #dfff0012!important}
-#adminModal .admin-form input::placeholder,#adminModal .admin-form textarea::placeholder{color:#686868}
-#adminModal .upload-dropzone{background:#000;border-color:#383838}
-#adminModal .upload-dropzone:hover{background:#070707;border-color:var(--acid)}
-#adminModal .admin-beat:hover,#adminModal .admin-order:hover{border-color:#dfff006b!important;background:#090909!important}
-#adminModal .small-btn{background:#090909;border-color:#2b2b2b;color:#e9e9e9}
-#adminModal .small-btn:hover{border-color:var(--acid);color:var(--acid);background:#101010}
-#adminModal .small-btn.danger{background:#100404;border-color:#462020;color:#ff7777}
-#adminModal .small-btn.relist-btn{background:var(--acid)!important;border-color:var(--acid)!important;color:#000!important}
-#adminModal .primary-btn{background:var(--acid)!important;border-color:var(--acid)!important;color:#000!important;box-shadow:0 0 22px #dfff0014}
-#adminModal .primary-btn:hover{background:#efff73!important;border-color:#efff73!important;color:#000!important}
-#adminModal .modal-close{background:#080808;border-color:#262626;color:#ddd}
-#adminModal .upload-progress{display:flex;align-items:center;gap:10px;padding:14px;margin-bottom:4px;background:#050505;border:1px solid #202020;border-radius:10px}
-#adminModal .upload-progress>i{height:1px;flex:1;background:#292929}
-#adminModal .upload-step{display:flex;align-items:center;gap:8px;color:#777;font-size:11px;white-space:nowrap}
-#adminModal .upload-step b{display:grid;place-items:center;width:28px;height:28px;border:1px solid #333;border-radius:50%;font-size:10px;color:#999}
+/* Admin catalog: editorial track list, not a data table */
+.admin-beat-list{display:flex;flex-direction:column;gap:8px}
+.admin-beat{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:16px;padding:14px 16px;border:1px solid #ffffff12;border-radius:10px;background:#111113;min-width:0}
+.admin-beat:hover{background:#161315;border-color:#ff453a55}
+.admin-beat-art{width:64px;height:64px;display:flex;flex-direction:column;justify-content:space-between;padding:9px;border-radius:6px;background:linear-gradient(145deg,#291211,#121214 70%);border:1px solid #ff453a2a;color:#ff6259}
+.admin-beat-art>span{font:600 10px 'Space Grotesk',sans-serif;letter-spacing:.08em;color:#ff817a}
+.mini-wave{height:25px;display:flex;align-items:center;justify-content:space-between;gap:2px}
+.mini-wave b{display:block;width:3px;border-radius:3px;background:#ff5148;height:35%}
+.mini-wave b:nth-child(2),.mini-wave b:nth-child(8){height:65%}.mini-wave b:nth-child(3),.mini-wave b:nth-child(6){height:90%}.mini-wave b:nth-child(4){height:48%}.mini-wave b:nth-child(5){height:100%}.mini-wave b:nth-child(7){height:55%}
+.admin-beat-main{min-width:0;display:flex;flex-direction:column;gap:7px}
+.admin-beat-titleline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-beat-titleline strong{font:600 15px/1.25 'Space Grotesk',sans-serif;color:#f4f1ef;overflow-wrap:anywhere}
+.admin-beat-status{display:inline-flex;align-items:center;gap:6px;font-size:9px;color:#aaa4a5;white-space:nowrap}
+.admin-beat-status i{width:6px;height:6px;border-radius:50%;background:#777}
+.admin-beat-status.is-live i{background:#65c991;box-shadow:0 0 0 3px #65c99118}
+.admin-beat-status.is-hidden i{background:#ff6259}
+.admin-beat-main>small{font-size:10px;color:#8e898b;line-height:1.5}
+.meta-dot{padding:0 4px;color:#5b5557}
+.admin-beat-prices{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#777174;font-size:9px;letter-spacing:.04em}
+.admin-beat-prices span{display:flex;gap:5px;align-items:center}.admin-beat-prices b{font-size:10px;font-weight:600;color:#d5d0d0;letter-spacing:0}.admin-beat-prices em{font-style:normal;color:#ff7169;font-size:9px}
+.admin-beat .admin-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.admin-beat .small-btn{white-space:nowrap;padding:10px 12px}
+.admin-beat .small-btn.relist-btn{background:#ff453a;color:#fff;border-color:#ff453a}
+.admin-beat .small-btn.relist-btn:hover{background:#ff6259}
+.admin-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:48px 20px;border:1px dashed #ffffff20;border-radius:10px;color:#999}
+.admin-empty>span{font-size:28px;color:#ff6259}.admin-empty strong{color:#f4f1ef;font-size:14px}.admin-empty p{margin:0;font-size:11px;line-height:1.6}
+@media(max-width:760px){.admin-beat{grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px}.admin-beat-art{width:52px;height:58px;padding:7px}.admin-beat-main{grid-column:2}.admin-beat .admin-actions{grid-column:1/-1;justify-content:flex-start;padding-top:10px;border-top:1px solid #ffffff0d}.admin-beat .admin-actions .small-btn{flex:0 1 auto}.admin-beat-prices{gap:9px}}
+@media(max-width:420px){.admin-beat-titleline{align-items:flex-start;flex-direction:column;gap:5px}.admin-beat-prices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.admin-beat-prices span{flex-direction:column;align-items:flex-start;gap:2px}.admin-beat .admin-actions .small-btn{flex:1 1 130px}}
+
+/* VEXEN acid-green refresh + BeatStars-inspired vertical track rows */
+:root{--bg:#080a08;--panel:#101410;--panel2:#171d16;--line:#293329;--text:#f4f7f1;--muted:#8d978b;--acid:#b7ff00;--acid2:#8fce00;--danger:#ff6b6b;--red:var(--acid)}
+::selection{background:var(--acid);color:#080a08}
+.topbar nav a:hover,.nav-link-btn:hover,.text-btn:hover{color:var(--acid)}
+.nav-admin{border-color:#b7ff005c;color:var(--acid)}.nav-admin:hover{background:var(--acid);border-color:var(--acid);color:#080a08}
+.cart-btn span{background:var(--acid);color:#080a08}
+.eyebrow,.hero-text-only h1 em,.market-heading h2 em,.about-section h2 em{color:var(--acid)}
+.eyebrow i,.status-dot{background:var(--acid);box-shadow:0 0 12px #b7ff0040}
+.primary-btn{background:var(--acid);color:#080a08}.primary-btn:hover{background:#d0ff66;color:#080a08}
+.hero-signature-mark:before{border-color:#b7ff0033;box-shadow:0 0 0 24px #b7ff0008,0 0 0 48px #b7ff0005}
+.signature-wave i{background:var(--acid)}.signature-wave i:nth-child(7n){background:#f4f7f1}
+.hero-text-only h1{max-width:900px}
+.genre-nav.active{background:#b7ff0010;color:#f4f7f1;border-color:#b7ff003d}.genre-nav.active span{color:var(--acid)}
+.search-wrap:focus-within{border-color:#b7ff0088;box-shadow:0 0 0 3px #b7ff000d}
+/* The catalog is a list of individual track rows, never a table/grid of cards. */
+.track-list-head{display:none!important}
+#beatGrid.beat-grid{display:flex!important;flex-direction:column;gap:0;border-top:1px solid #ffffff12}
+#beatGrid .beat-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(155px,auto);grid-template-areas:"identity license" "details actions";align-items:center;column-gap:22px;row-gap:8px;padding:17px 16px;min-height:0;background:transparent;border:0;border-bottom:1px solid #ffffff12;border-radius:0;transition:background .18s ease}
+#beatGrid .beat-row:hover{background:#b7ff0008;border-color:#ffffff18}
+#beatGrid .track-identity{grid-area:identity;min-width:0;gap:13px}
+#beatGrid .track-number{width:42px;height:42px;flex-basis:42px;border:1px solid #b7ff0030;border-radius:7px;background:linear-gradient(145deg,#1b2810,#0c100b);color:var(--acid);font-size:12px}
+#beatGrid .track-copy{min-width:0}
+#beatGrid .track-copy .beat-title{font:600 15px/1.35 'Space Grotesk',sans-serif;letter-spacing:-.035em;color:#f4f7f1;overflow-wrap:anywhere}
+#beatGrid .track-mobile-meta{margin-top:4px;color:#8d978b;font-size:10px;letter-spacing:.015em}
+#beatGrid .track-details{grid-area:details;display:flex;align-items:center;gap:9px;padding-left:55px;color:#899286;font-size:10px}
+#beatGrid .track-details span,#beatGrid .track-details b{font-weight:500;color:#aeb7a9}
+#beatGrid .track-details span:last-child{color:var(--acid)}
+#beatGrid .track-license{grid-area:license;justify-self:end;width:100%;max-width:210px}
+#beatGrid .track-license select,#beatGrid .license-select{width:100%;background:#101510;border:1px solid #303a2b;color:#eaf2e3;border-radius:7px;padding:10px 30px 10px 11px;font-size:11px}
+#beatGrid .track-license select:focus{outline:none;border-color:#b7ff0080}
+#beatGrid .track-actions{grid-area:actions;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+#beatGrid .card-play{width:34px;height:34px;flex-basis:34px;border-radius:50%;background:#171e13;border:1px solid #354329;color:var(--acid)}
+#beatGrid .card-play:hover,#beatGrid .card-play.is-playing{background:var(--acid);border-color:var(--acid);color:#080a08}
+#beatGrid .add-btn{min-height:35px;padding:9px 12px;background:var(--acid);border:1px solid var(--acid);color:#080a08;border-radius:7px;font-weight:800;letter-spacing:.035em}
+#beatGrid .add-btn:hover{background:#d0ff66;border-color:#d0ff66;color:#080a08}
+#beatGrid .no-demo{font-size:9px;color:#727b6d;letter-spacing:.08em}
+.market-stats b{color:var(--acid)}
+.audio-player,.global-player{border-color:#2a3425}.player-play,.global-play{background:var(--acid);color:#080a08}.player-label{color:var(--acid)}.player-seek,.player-volume,.global-waveform{accent-color:var(--acid)}
+.add-btn:hover,.icon-btn:hover{border-color:var(--acid)}
+/* Consistent acid-green controls in the admin panel too */
+#adminModal .eyebrow{color:#a8b19f}#adminModal .eyebrow:before{background:var(--acid)}
+#adminModal .admin-tabs .tab.active{background:var(--acid);color:#080a08}
+.admin-form input:focus,.admin-form textarea:focus,.admin-form select:focus,.modal-card input:focus,.modal-card select:focus,.modal-card textarea:focus{border-color:#b7ff0088;box-shadow:0 0 0 3px #b7ff000d}
+.upload-icon,.upload-symbol{color:var(--acid)}.upload-dropzone:hover{border-color:#b7ff0088;background:#11170d}
+.admin-beat:hover,.admin-order:hover{border-color:#b7ff0040}.admin-beat-art{background:linear-gradient(145deg,#1b2810,#101410 75%);border-color:#b7ff002a;color:var(--acid)}.admin-beat-art>span{color:var(--acid)}.mini-wave b{background:var(--acid)}
+.admin-beat-status.is-live i{background:var(--acid);box-shadow:0 0 0 3px #b7ff0018}.admin-beat-status.is-hidden i{background:#ff6b6b}
+.admin-beat-prices em{color:var(--acid)}.admin-beat .small-btn.relist-btn{background:var(--acid);color:#080a08;border-color:var(--acid)}.admin-beat .small-btn.relist-btn:hover{background:#d0ff66}
+@media(max-width:760px){#beatGrid .beat-row{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:14px 8px}#beatGrid .track-license{max-width:180px}#beatGrid .track-details{padding-left:55px}}
+@media(max-width:520px){#beatGrid .beat-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"identity" "details" "license" "actions";gap:9px;padding:15px 8px}#beatGrid .track-details{padding-left:55px;flex-wrap:wrap}#beatGrid .track-license{justify-self:stretch;max-width:none;padding-left:55px}#beatGrid .track-actions{justify-content:flex-start;padding-left:55px}#beatGrid .add-btn{flex:1;max-width:220px}.market-stats{align-self:flex-start}}
+
+
+/* Beat descriptions: show only real descriptions, never placeholder copy. */
+#beatGrid .track-description{margin:8px 0 0;max-width:680px;color:#aab3a4;font-size:12px;line-height:1.65;overflow-wrap:anywhere;white-space:pre-line}
+#beatGrid .track-copy{min-width:0}
+/* Three-step upload wizard in the original acid-green + black palette. */
+#adminModal .upload-progress{display:flex;align-items:center;gap:10px;padding:14px;margin-bottom:4px;background:#080a08;border:1px solid #293329;border-radius:10px}
+#adminModal .upload-progress>i{height:1px;flex:1;background:#293329}
+#adminModal .upload-step{display:flex;align-items:center;gap:8px;color:#8d978b;font-size:11px;white-space:nowrap}
+#adminModal .upload-step b{display:grid;place-items:center;width:28px;height:28px;border:1px solid #394333;border-radius:50%;font-size:10px;color:#aab3a4}
 #adminModal .upload-step.active,#adminModal .upload-step.complete{color:var(--acid)}
-#adminModal .upload-step.active b,#adminModal .upload-step.complete b{background:var(--acid);border-color:var(--acid);color:#000}
-#adminModal .upload-step-panel{padding:22px;border:1px solid #202020;border-radius:12px;background:#030303}
+#adminModal .upload-step.active b,#adminModal .upload-step.complete b{background:var(--acid);border-color:var(--acid);color:#080a08}
+#adminModal .upload-step-panel{padding:22px;border:1px solid #293329;border-radius:12px;background:#080a08}
 #adminModal .upload-step-panel h4{margin:0 0 8px;font:600 24px/1.1 'Space Grotesk',sans-serif;letter-spacing:-.05em}
 #adminModal .step-kicker{margin:0 0 12px;color:var(--acid);font-size:9px;letter-spacing:.16em;font-weight:800}
-#adminModal .field-help{color:#777;font-size:10px;line-height:1.6}
-#adminModal .step-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #202020}
-#adminModal .step-controls>span{color:#777;font-size:10px;letter-spacing:.04em}
+#adminModal .field-help{color:#8d978b;font-size:10px;line-height:1.6}
+#adminModal .step-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid #293329}
+#adminModal .step-controls>span{color:#8d978b;font-size:10px;letter-spacing:.04em}
 #adminModal .step-controls .primary-btn{min-height:44px;padding:12px 16px}
 #adminModal .step-controls .small-btn{min-height:42px}
+#adminModal .admin-form input:focus,#adminModal .admin-form textarea:focus,#adminModal .admin-form select:focus{border-color:#b7ff00!important;box-shadow:0 0 0 3px #b7ff0012!important}
+#adminModal .primary-btn{background:var(--acid);border-color:var(--acid);color:#080a08}
+#adminModal .primary-btn:hover{background:#d0ff66;border-color:#d0ff66;color:#080a08}
+#adminModal .admin-tabs .tab.active{background:var(--acid);color:#080a08}
+#adminModal .admin-beat .small-btn.relist-btn{background:var(--acid);color:#080a08;border-color:var(--acid)}
+#adminModal .admin-beat .small-btn.relist-btn:hover{background:#d0ff66}
 @media(max-width:700px){#adminModal .upload-progress{gap:5px;padding:10px 7px}#adminModal .upload-step{gap:5px;font-size:9px}#adminModal .upload-step b{width:25px;height:25px}#adminModal .upload-step-panel{padding:16px 12px}#adminModal .upload-step-panel h4{font-size:22px}#adminModal .step-controls{flex-wrap:wrap}#adminModal .step-controls>span{order:-1;width:100%}#adminModal .step-controls .primary-btn{flex:1}#adminModal .track-description{font-size:11px}}
+
+#adminModal .admin-beat-description{margin:8px 0 0;color:#aab3a4;font-size:11px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-line}
