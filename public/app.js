@@ -75,15 +75,14 @@ function selectBeatForPlayer(beat,autoplay=true){
   drawWaveform();
 }
 function initGlobalPlayer(){
-  const audio=$('#globalAudio'),canvas=$('#globalWaveform'),seek=$('#globalSeek');if(!audio||audio.dataset.bound)return;audio.dataset.bound='1';
+  const audio=$('#globalAudio'),canvas=$('#globalWaveform');if(!audio||audio.dataset.bound)return;audio.dataset.bound='1';
   $('#globalPlay').addEventListener('click',async()=>{if(!audio.src){toast('Сначала выбери бит в каталоге.');return}if(audio.paused){try{await audio.play()}catch{toast('Не удалось запустить демо.',true)}}else audio.pause()});
-  audio.addEventListener('play',()=>{$('#globalPlay').textContent='Ⅱ';$('#globalPlay').setAttribute('aria-label','Пауза');$('#globalPlayerStatus').textContent='СЕЙЧАС ИГРАЕТ';document.querySelectorAll('.card-play').forEach(b=>b.textContent=Number(b.dataset.playBeat)===audioUI.beatId?'Ⅱ СЛУШАЕТСЯ':'▶ СЛУШАТЬ ДЕМО')});
+  audio.addEventListener('play',()=>{$('#globalPlayer').classList.add('is-visible');document.body.classList.add('player-visible');$('#globalPlay').textContent='Ⅱ';$('#globalPlay').setAttribute('aria-label','Пауза');$('#globalPlayerStatus').textContent='СЕЙЧАС ИГРАЕТ';document.querySelectorAll('.card-play').forEach(b=>b.textContent=Number(b.dataset.playBeat)===audioUI.beatId?'Ⅱ СЛУШАЕТСЯ':'▶ СЛУШАТЬ ДЕМО')});
   audio.addEventListener('pause',()=>{$('#globalPlay').textContent='▶';$('#globalPlay').setAttribute('aria-label','Продолжить');document.querySelectorAll('.card-play').forEach(b=>b.textContent='▶ СЛУШАТЬ ДЕМО');if(audio.src&&audio.currentTime>0)$('#globalPlayerStatus').textContent='ПАУЗА'});
-  audio.addEventListener('loadedmetadata',()=>{$('#globalDuration').textContent=timeLabel(audio.duration);seek.disabled=!Number.isFinite(audio.duration);drawWaveform()});
-  audio.addEventListener('timeupdate',()=>{$('#globalCurrent').textContent=timeLabel(audio.currentTime);if(audio.duration>0)seek.value=String(Math.round(audio.currentTime/audio.duration*1000));drawWaveform()});
+  audio.addEventListener('loadedmetadata',()=>{$('#globalDuration').textContent=timeLabel(audio.duration);drawWaveform()});
+  audio.addEventListener('timeupdate',()=>{$('#globalCurrent').textContent=timeLabel(audio.currentTime);drawWaveform()});
   audio.addEventListener('ended',()=>{$('#globalPlayerStatus').textContent='ДЕМО ЗАВЕРШЕНО';$('#globalPlay').textContent='▶';document.querySelectorAll('.card-play').forEach(b=>b.textContent='▶ СЛУШАТЬ ДЕМО');drawWaveform()});
   audio.addEventListener('error',()=>{$('#globalPlayerStatus').textContent='ДЕМО НЕДОСТУПНО';toast('Демо не загрузилось. Проверь файл в админ-панели.',true)});
-  seek.addEventListener('input',()=>{if(audio.duration>0){audio.currentTime=Number(seek.value)/1000*audio.duration;drawWaveform()}});
   canvas.addEventListener('click',e=>{if(audio.duration>0){const r=canvas.getBoundingClientRect();audio.currentTime=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))*audio.duration;drawWaveform()}});
   $('#globalVolume').addEventListener('input',e=>{audio.volume=Number(e.target.value);audio.muted=audio.volume===0});audio.volume=.85;window.addEventListener('resize',drawWaveform);
 }
