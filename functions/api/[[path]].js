@@ -225,7 +225,7 @@ function licenseInfo(beat, license) {
   const x = map[license];
   if (!x || Number(x[1]) <= 0) return null;
 
-  // Discounts are disabled in VEXEN BeatStore: license prices are fixed.
+  // Discounts are disabled in EGROV BeatStore: license prices are fixed.
   return {
     label: x[0],
     price: Math.max(0, Math.round(Number(x[1]) || 0)),
@@ -243,13 +243,13 @@ async function handle(request, env) {
   const method = request.method;
 
   if (path === "health" && method === "GET") {
-    return json({ ok: true, service: "VEXEN BeatStore API" });
+    return json({ ok: true, service: "EGROV BeatStore API" });
   }
 
   if (path === "config" && method === "GET") {
     return json({
       bot_username: String(
-        env.TELEGRAM_BOT_USERNAME || "VEXENBeatStoreBot"
+        env.TELEGRAM_BOT_USERNAME || "EGROVBeatStoreBot"
       ).replace(/^@/, ""),
     });
   }
@@ -735,7 +735,7 @@ async function handle(request, env) {
     )
       .bind(
         title,
-        String(data.artist || "VEXEN"),
+        String(data.artist || "EGROV"),
         String(data.genre || "Trap"),
         Math.max(1, Math.round(Number(data.bpm) || 140)),
         String(data.musical_key || "Am"),
@@ -787,7 +787,7 @@ async function handle(request, env) {
     )
       .bind(
         String(data.title || ""),
-        String(data.artist || "VEXEN"),
+        String(data.artist || "EGROV"),
         String(data.genre || "Trap"),
         Number(data.bpm) || 140,
         String(data.musical_key || "Am"),
@@ -869,7 +869,7 @@ export async function onRequest(context) {
   try {
     return await handle(context.request, context.env);
   } catch (error) {
-    console.error("VEXEN API error:", error);
+    console.error("EGROV API error:", error);
 
     return fail(
       "Внутренняя ошибка сервера. Проверьте настройки и журналы Cloudflare.",

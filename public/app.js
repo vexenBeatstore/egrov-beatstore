@@ -1,7 +1,7 @@
 
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { beats: [], cart: [], botUsername: "VEXENBeatStoreBot", admin: false, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null };
+const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null };
 const rub = n => new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(Number(n)||0);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, options={}) {
@@ -45,7 +45,7 @@ function drawWaveform(){
     const ix=peaks.length?Math.floor(i/count*peaks.length):0;const seed=((i*37+13)%29)/100;
     const amp=peaks.length?peaks[ix]:(.12+Math.abs(Math.sin(i*.73))*.18+seed);
     const bh=Math.max(3*dpr,amp*(h*.86));const x=i*(barW+gap),y=(h-bh)/2;
-    ctx.fillStyle=(i/count)<=progress?'#c5ff3d':'#65705e';ctx.globalAlpha=(i/count)<=progress?1:.78;
+    ctx.fillStyle=(i/count)<=progress?'#A0A0A0':'#555555';ctx.globalAlpha=(i/count)<=progress?1:.78;
     ctx.beginPath();ctx.roundRect(x,y,barW,bh,Math.min(barW/2,bh/2));ctx.fill();
   }
   ctx.globalAlpha=1;
@@ -341,7 +341,7 @@ $('#beatForm').addEventListener('submit', async e => {
   try {
     const fields = {
       title: getValue('title'),
-      artist: 'VEXEN',
+      artist: 'EGROV',
       genre: getValue('genre') || 'Trap',
       bpm: Number(getValue('bpm')) || 140,
       musical_key: getValue('musical_key') || 'Am',
