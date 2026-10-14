@@ -560,3 +560,164 @@ html{scroll-padding-top:82px}body{font-family:'DM Sans',system-ui,-apple-system,
 @media(max-width:700px){#adminModal .upload-progress{gap:5px;padding:10px 7px}#adminModal .upload-step{gap:5px;font-size:9px}#adminModal .upload-step b{width:25px;height:25px}#adminModal .upload-step-panel{padding:16px 12px}#adminModal .upload-step-panel h4{font-size:22px}#adminModal .step-controls{flex-wrap:wrap}#adminModal .step-controls>span{order:-1;width:100%}#adminModal .step-controls .primary-btn{flex:1}#adminModal .track-description{font-size:11px}}
 
 #adminModal .admin-beat-description{margin:8px 0 0;color:#aab3a4;font-size:11px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-line}
+
+/* Responsive finishing pass: fluid layouts for phones, tablets, laptops and wide displays. */
+html{scroll-padding-top:100px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-width:0;overflow-x:hidden}
+img,svg,video,canvas{max-width:100%}
+button,a,input,select,textarea{touch-action:manipulation}
+button,a{ -webkit-tap-highlight-color:transparent }
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--acid);outline-offset:3px}
+main,footer,.topbar{min-width:0}
+.market-heading,.catalog-layout,.about-section{width:100%;max-width:1480px}
+.hero.hero-text-only{padding-left:clamp(20px,6vw,92px);padding-right:clamp(20px,6vw,92px)}
+.catalog-section{padding-left:clamp(16px,4.5vw,72px);padding-right:clamp(16px,4.5vw,72px)}
+.about-section{padding-left:clamp(20px,6vw,92px);padding-right:clamp(20px,6vw,92px)}
+#beatGrid .track-description{overflow-wrap:anywhere;word-break:normal}
+.modal{padding:18px;align-items:center;overflow-y:auto}
+.modal-card{width:min(560px,100%);max-height:min(90dvh,900px);overscroll-behavior:contain}
+.admin-card{width:min(900px,100%)}
+.drawer-panel{padding:clamp(16px,3vw,27px);padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.global-player{padding-bottom:max(14px,env(safe-area-inset-bottom))}
+
+@media (min-width:1500px){
+  .topbar{padding-inline:max(6.5%,calc((100vw - 1480px)/2))}
+  .hero.hero-text-only{padding-inline:max(6.5%,calc((100vw - 1320px)/2));}
+  .catalog-section{padding-top:94px;padding-bottom:108px}
+  .beat-row{padding-block:18px}
+}
+@media (max-width:1100px){
+  .topbar{padding-inline:4%}
+  nav{gap:15px}
+  .hero.hero-text-only{grid-template-columns:minmax(0,1fr) minmax(160px,.42fr);gap:28px}
+  .catalog-layout{grid-template-columns:160px minmax(0,1fr);gap:18px}
+  .market-toolbar{align-items:stretch;flex-wrap:wrap}
+  .catalog-tools{flex:1 1 360px;min-width:0}
+  .search-wrap{flex:1;min-width:0}
+  .search-wrap input{width:100%;min-width:0}
+  .sort-control{flex:0 0 auto}
+  #beatGrid .beat-row{column-gap:14px}
+}
+@media (max-width:760px){
+  html{scroll-padding-top:120px}
+  .topbar{height:auto;min-height:66px;padding:7px 16px 9px;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:2px}
+  .brand-logo{width:124px;height:48px}
+  .cart-btn{grid-column:2;grid-row:1;padding:9px 12px;font-size:11px;white-space:nowrap}
+  .topbar nav{grid-column:1/-1;grid-row:2;display:flex;width:100%;justify-content:space-between;gap:10px;padding-top:5px;overflow-x:auto;scrollbar-width:none;white-space:nowrap;font-size:11px}
+  .topbar nav::-webkit-scrollbar{display:none}
+  .nav-admin{padding:8px 10px;font-size:9px}
+  .hero.hero-text-only{padding:56px 22px 46px;grid-template-columns:minmax(0,1fr);min-height:0}
+  .hero-text-only h1{font-size:clamp(44px,11vw,72px);letter-spacing:-.055em;line-height:.98}
+  .hero-text{font-size:13px;max-width:38rem}
+  .hero-meta{flex-wrap:wrap;gap:10px 18px;margin-top:32px;line-height:1.6}
+  .hero-side-note{display:none}
+  .hero.hero-text-only:after{right:-75px;top:8%;width:220px;opacity:.65}
+  .catalog-section{padding:55px 18px 70px}
+  .market-heading{align-items:flex-start;gap:14px;padding-bottom:19px;margin-bottom:18px}
+  .market-heading h2{font-size:clamp(25px,6vw,36px);letter-spacing:-.045em}
+  .market-subtitle{font-size:11px;line-height:1.65;max-width:38rem}
+  .market-stats{padding-top:4px;font-size:8px}
+  .catalog-layout{display:flex;flex-direction:column;gap:16px}
+  .market-sidebar{border-right:0;border-bottom:1px solid var(--line);padding:0 0 13px;min-width:0}
+  .market-sidebar>.sidebar-label,.market-sidebar>.sidebar-note{display:none}
+  .market-sidebar .sidebar-label-spaced{display:block;margin:0 0 8px}
+  .genre-list{display:flex;gap:7px;overflow-x:auto;padding:0 1px 5px;scrollbar-width:thin}
+  .genre-nav{flex:0 0 auto;width:auto;min-height:38px;padding:9px 12px;border-color:#ffffff14;font-size:10px;white-space:nowrap}
+  .genre-nav.active{border-color:#b7ff0050}
+  .market-toolbar{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:13px}
+  .catalog-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;flex:auto}
+  .search-wrap{width:100%;min-height:43px}
+  .search-wrap input{height:43px;width:100%;font-size:12px}
+  .catalog-tools select,.sort-control select{height:42px;width:100%;min-width:0;font-size:12px}
+  .sort-control{display:flex;align-items:center;gap:10px;justify-content:space-between;font-size:9px;white-space:nowrap}
+  .sort-control select{flex:1}
+  #beatGrid .beat-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"identity license" "details details" "actions actions";gap:10px;padding:15px 3px}
+  #beatGrid .track-identity{gap:10px;align-items:flex-start}
+  #beatGrid .track-number{width:34px;height:36px;flex-basis:34px;font-size:10px}
+  #beatGrid .track-copy .beat-title{font-size:14px;line-height:1.35}
+  #beatGrid .track-mobile-meta{font-size:10px;line-height:1.5}
+  #beatGrid .track-description{font-size:11px;line-height:1.6;margin-top:7px}
+  #beatGrid .track-details{padding-left:44px;display:flex;flex-wrap:wrap;gap:6px 9px;font-size:10px}
+  #beatGrid .track-license{width:clamp(115px,35vw,170px);max-width:none;padding:0;align-self:start}
+  #beatGrid .track-license select,#beatGrid .license-select{font-size:10px;padding:10px 25px 10px 8px;min-height:39px}
+  #beatGrid .track-actions{padding:0 0 0 44px;justify-content:flex-start}
+  #beatGrid .card-play{width:38px;height:38px;flex-basis:38px}
+  #beatGrid .add-btn{min-height:38px;max-width:none;flex:1;padding:10px 12px;font-size:10px}
+  .about-section{grid-template-columns:minmax(0,1fr);gap:18px;padding:44px 22px}
+  .about-section h2{font-size:clamp(28px,7vw,42px)}
+  .about-section p{font-size:12px;line-height:1.8;margin:0}
+  footer{flex-wrap:wrap;gap:14px;padding:22px 18px 28px;line-height:1.6}
+  footer .brand-logo{width:108px;height:42px}
+  .modal{padding:10px;align-items:flex-start}
+  .modal-card{margin:auto 0;padding:24px 16px 18px;max-height:calc(100dvh - 20px);width:100%;border-radius:10px}
+  .modal-card h3,.drawer-head h3{font-size:24px;line-height:1.15;padding-right:24px}
+  .modal-close{right:10px;top:10px}
+  .admin-card{width:100%}
+  .admin-tabs{gap:6px}
+  .admin-tabs .tab{flex:1 1 auto;padding:10px 8px;font-size:10px}
+  .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .form-grid .span-2{grid-column:1/-1}
+  .admin-form input,.admin-form textarea,.admin-form select{font-size:16px;min-height:42px}
+  .admin-form textarea{min-height:120px}
+  .upload-step span{max-width:76px;overflow:hidden;text-overflow:ellipsis}
+  #adminModal .upload-progress{gap:4px;padding:9px 6px}
+  #adminModal .upload-step{font-size:9px;min-width:0}
+  #adminModal .upload-step b{width:24px;height:24px;flex:0 0 24px}
+  #adminModal .upload-step-panel{padding:15px 11px}
+  #adminModal .step-controls{gap:8px}
+  #adminModal .step-controls .primary-btn{min-width:0;padding-inline:11px;font-size:9px}
+  .drawer-panel{width:100%;border-left:0;padding:18px}
+  .global-player{grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto auto;gap:8px 12px;padding:10px 14px max(10px,env(safe-area-inset-bottom));min-height:0}
+  .global-play{grid-column:1;grid-row:1;width:38px;height:38px}
+  .global-track-copy{grid-column:2;grid-row:1;min-width:0}
+  .global-track-copy strong{font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .global-wave-area{grid-column:1/-1;grid-row:2;min-width:0}
+  .global-waveform{height:25px}
+  .global-volume-wrap{display:none}
+  body.player-visible{padding-bottom:94px}
+}
+@media (max-width:420px){
+  .topbar{padding-inline:12px}
+  .brand-logo{width:108px;height:43px}
+  .cart-btn{padding:8px 9px;font-size:10px}
+  .topbar nav{gap:8px;font-size:10px}
+  .nav-admin{padding:7px 8px;font-size:8px;letter-spacing:.5px}
+  .hero.hero-text-only{padding:45px 17px 38px}
+  .hero-text-only h1{font-size:clamp(40px,12vw,54px)}
+  .catalog-section{padding-inline:14px}
+  .market-heading{display:block}
+  .market-stats{margin-top:13px}
+  #beatGrid .beat-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"identity" "details" "license" "actions";gap:8px;padding:14px 2px}
+  #beatGrid .track-identity{align-items:flex-start}
+  #beatGrid .track-license{width:100%;padding-left:44px}
+  #beatGrid .track-details{padding-left:44px}
+  #beatGrid .track-actions{padding-left:44px}
+  #beatGrid .add-btn{flex:1}
+  .form-grid{grid-template-columns:minmax(0,1fr)}
+  .form-grid .span-2{grid-column:auto}
+  #adminModal .upload-step span{display:none}
+  #adminModal .upload-step{gap:3px}
+  #adminModal .upload-step b{width:26px;height:26px;flex-basis:26px}
+  #adminModal .upload-progress>i{min-width:10px}
+  #adminModal .step-controls{display:grid;grid-template-columns:1fr 1fr}
+  #adminModal .step-controls>span{grid-column:1/-1;order:-1;width:100%}
+  #adminModal .step-controls .primary-btn{grid-column:2}
+  #adminModal .step-controls .small-btn{grid-column:1}
+  footer{font-size:8px;letter-spacing:.5px}
+}
+@media (max-width:350px){
+  .topbar nav{font-size:9px;gap:6px}
+  .nav-admin{padding:6px}
+  .cart-btn{font-size:9px}
+  .hero-meta{font-size:7px}
+  .market-heading h2{font-size:24px}
+  #beatGrid .track-details{font-size:9px}
+}
+@media (max-height:560px) and (orientation:landscape) and (max-width:900px){
+  .hero.hero-text-only{padding-block:32px;min-height:0}
+  .hero-meta{margin-top:20px}
+  .modal-card{max-height:calc(100dvh - 12px)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
