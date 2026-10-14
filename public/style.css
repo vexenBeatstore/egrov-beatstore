@@ -176,3 +176,20 @@ h1,h2,h3,.brand,.art-core{font-family:'Space Grotesk',sans-serif}
 .hero-art:after{background:linear-gradient(90deg,#090b0a12,transparent 20%),linear-gradient(0deg,#090b0a20,transparent 18%)}
 @media(max-width:850px){.hero{min-height:0}.hero-art{height:clamp(320px,62vw,500px);background-size:contain}}
 @media(max-width:560px){.hero-art{height:300px;background-size:contain}}
+
+
+/* v11 — factual, text-led hero; license price appears only in the license selector */
+.hero.hero-text-only{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,.45fr);align-items:center;min-height:440px;padding-block:clamp(58px,8vw,112px);background:radial-gradient(ellipse at 82% 48%,#b8ff3810 0%,transparent 38%),linear-gradient(115deg,#090b0a 0%,#0b0e0b 72%,#10150c 100%);border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero.hero-text-only:after{content:"";position:absolute;right:7%;top:13%;width:clamp(180px,27vw,380px);aspect-ratio:1;border:1px solid #baff3b1c;border-radius:50%;box-shadow:0 0 0 34px #baff3b05,0 0 0 68px #baff3b04;pointer-events:none}
+.hero-text-only .hero-copy{position:relative;z-index:1;max-width:760px}
+.hero-text-only .hero h1,.hero-text-only h1{font-size:clamp(52px,8vw,112px);line-height:.91;letter-spacing:-.065em;margin:22px 0 24px}
+.hero-text-only h1 em{font-style:normal;color:var(--acid)}
+.hero-text-only .hero-text{max-width:510px;font-size:clamp(14px,1.3vw,17px);line-height:1.75;color:#aeb4ab}
+.hero-text-only .hero-meta{display:flex;flex-wrap:wrap;gap:24px;margin-top:36px;color:#7f887a;font-size:9px;letter-spacing:1.4px}
+.hero-side-note{position:relative;z-index:1;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:20px;color:#9aa28f}
+.hero-index{font:500 clamp(36px,5vw,66px)/1 'Space Grotesk',sans-serif;letter-spacing:.14em;color:#d5e4c6}
+.hero-rule{height:100px;width:1px;background:linear-gradient(transparent,var(--acid),transparent)}
+.hero-side-caption{writing-mode:vertical-rl;font-size:9px;letter-spacing:3px}
+.track-license{grid-template-columns:minmax(0,1fr)}
+.track-license .license-select{margin:0}
+@media(max-width:700px){.hero.hero-text-only{grid-template-columns:1fr;min-height:0;padding-block:62px}.hero-side-note{display:none}.hero-text-only h1{font-size:clamp(48px,13vw,76px)}.hero-text-only .hero-meta{gap:10px 18px;margin-top:25px}.track-license{display:flex;align-items:center}.track-license select{max-width:100%}}
