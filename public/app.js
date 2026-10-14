@@ -290,6 +290,14 @@ $('#adminOpen').onclick=openAdmin;
 $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
+
+const demoInput = document.querySelector('#beatForm input[name=demo]');
+if (demoInput) demoInput.addEventListener('change', () => {
+  const file = demoInput.files && demoInput.files[0];
+  const output = document.querySelector('#demoFileName');
+  if (output) output.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} МБ` : 'Файл не выбран';
+});
+
 /* Загрузка файлов по одному, затем сохранение карточки */
 $('#beatForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -310,7 +318,7 @@ $('#beatForm').addEventListener('submit', async e => {
   try {
     const fields = {
       title: getValue('title'),
-      artist: getValue('artist') || 'VEXEN',
+      artist: 'VEXEN',
       genre: getValue('genre') || 'Trap',
       bpm: Number(getValue('bpm')) || 140,
       musical_key: getValue('musical_key') || 'Am',
@@ -325,7 +333,6 @@ $('#beatForm').addEventListener('submit', async e => {
     if (!getFile('demo')) throw new Error('Загрузи демо-файл. Полные MP3/WAV/STEMS загружать не нужно.');
 
     const uploads = [
-      {field:'cover', type:'cover', key:'cover_key', label:'Обложка'},
       {field:'demo', type:'demo', key:'demo_key', label:'Демо'}
     ];
     const uploaded = {};
@@ -347,7 +354,7 @@ $('#beatForm').addEventListener('submit', async e => {
     await api('admin/beats', {method:'POST', body:JSON.stringify({...fields,...uploaded})});
 
     form.reset();
-    const defaults = {artist:'VEXEN',genre:'Trap',bpm:140,musical_key:'Am',mp3_price:500,wav_price:1000,stems_price:2000,discount:0};
+    const defaults = {genre:'Trap',bpm:140,musical_key:'Am',mp3_price:500,wav_price:1000,stems_price:2000,discount:0};
     for (const [name,value] of Object.entries(defaults)) {
       const field = form.elements.namedItem(name);
       if (field) field.value = value;
