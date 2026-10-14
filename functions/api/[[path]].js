@@ -406,7 +406,7 @@ async function handle(request, env) {
 
   if (path === "catalog" && method === "GET") {
     const { results = [] } = await env.DB.prepare(
-      `SELECT id,title,artist,genre,bpm,musical_key,description,
+      `SELECT id,title,artist,genre,bpm,musical_key,description,created_at,
        cover_key,demo_key,mp3_price,wav_price,stems_price,discount,
        mp3_key,wav_key,stems_key
        FROM beats WHERE active=1 ORDER BY id DESC`

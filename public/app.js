@@ -88,7 +88,16 @@ function initGlobalPlayer(){
 }
 function renderCatalog(){
   const q=$('#search').value.trim().toLowerCase(),g=$('#genreFilter').value;
+  const sort=$('#sortOrder')?.value||'newest';
   const list=state.beats.filter(b=>(!g||b.genre===g)&&(!q||`${b.title} ${b.genre} ${b.description}`.toLowerCase().includes(q)));
+  const priceOf=b=>Math.min(...available(b).map(k=>finalPrice(b,k)),Number.POSITIVE_INFINITY);
+  list.sort((a,b)=>{
+    if(sort==='oldest'){const da=Date.parse(a.created_at||'')||Number(a.id);const db=Date.parse(b.created_at||'')||Number(b.id);return da-db||Number(a.id)-Number(b.id);}
+    if(sort==='title')return String(a.title||'').localeCompare(String(b.title||''),'ru');
+    if(sort==='price-low')return priceOf(a)-priceOf(b);
+    if(sort==='price-high')return priceOf(b)-priceOf(a);
+    const da=Date.parse(a.created_at||'')||Number(a.id);const db=Date.parse(b.created_at||'')||Number(b.id);return db-da||Number(b.id)-Number(a.id);
+  });
   const grid=$('#beatGrid');
   $('#emptyState').classList.toggle('hidden',list.length>0);
   $('#beatCount').textContent=String(list.length).padStart(2,'0');
@@ -276,7 +285,7 @@ async function editBeat(b){
     loadCatalog();
   }catch(e){toast(e.message,true)}
 }
-$('#search').addEventListener('input',renderCatalog);
+$('#search').addEventListener('input',renderCatalog);$('#sortOrder')?.addEventListener('change',renderCatalog);
 $('#genreFilter').addEventListener('change',renderCatalog);
 $('#cartOpen').onclick=()=>$('#cartDrawer').classList.remove('hidden');
 $('#checkoutOpen').onclick=()=>{

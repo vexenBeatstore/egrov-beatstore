@@ -158,3 +158,21 @@ h1,h2,h3,.brand,.art-core{font-family:'Space Grotesk',sans-serif}
 .hero-art .tag-top{top:16px;left:16px}.hero-art .tag-bottom{bottom:16px;right:16px}
 @media(max-width:850px){.hero-art{height:300px;max-width:600px}}
 @media(max-width:560px){.hero-art{height:260px}}
+
+/* v9 refinements: larger studio image, compact controls and consistent axes */
+.hero{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:4%;padding-top:60px;padding-bottom:60px}
+.hero-art{height:clamp(420px,42vw,590px);max-width:none;width:100%;background-image:linear-gradient(90deg,#090b0a14,#090b0a00 35%,#090b0a20),url('/hero-studio.jpg');background-size:cover;background-position:center 52%;border:1px solid #ffffff12}
+.hero-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#090b0a45,transparent 35%,#090b0a0b),linear-gradient(0deg,#090b0a42,transparent 30%);pointer-events:none}
+.hero-art .art-tag{z-index:1;text-shadow:0 2px 12px #000}
+.sort-control{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:9px;letter-spacing:1.5px;white-space:nowrap}
+.sort-control select{background:#101410;color:var(--text);border:1px solid var(--line);border-radius:3px;padding:11px 28px 11px 12px;font-size:11px;letter-spacing:0;min-width:145px;cursor:pointer}
+@media(max-width:850px){.hero{grid-template-columns:1fr;gap:28px;padding:52px 6% 38px}.hero-art{height:clamp(300px,65vw,460px);max-width:none}.hero-copy{max-width:720px}}
+@media(max-width:560px){.hero-art{height:310px}.sort-control{align-items:flex-start;flex-direction:column;gap:6px}.sort-control select{width:100%}}
+
+/* v10: show the full studio image clearly and keep it prominent */
+.hero{grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:3%;min-height:620px}
+.hero-art{height:clamp(480px,46vw,660px);max-width:none;background-size:contain;background-repeat:no-repeat;background-position:center center;background-color:#080a08;box-shadow:0 24px 70px #0009}
+.hero-art:before{background:linear-gradient(90deg,#090b0a22,transparent 35%),linear-gradient(0deg,#090b0a35,transparent 25%)}
+.hero-art:after{background:linear-gradient(90deg,#090b0a12,transparent 20%),linear-gradient(0deg,#090b0a20,transparent 18%)}
+@media(max-width:850px){.hero{min-height:0}.hero-art{height:clamp(320px,62vw,500px);background-size:contain}}
+@media(max-width:560px){.hero-art{height:300px;background-size:contain}}
