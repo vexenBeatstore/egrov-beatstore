@@ -838,11 +838,22 @@ async function handle(request, env) {
 
     if (!row) return fail("Заказ не найден.", 404);
 
-    await env.DB.prepare(
-      "UPDATE orders SET status='paid',paid_at=CURRENT_TIMESTAMP WHERE id=?"
-    )
-      .bind(id)
-      .run();
+    // После ручного подтверждения оплаты снимаем купленные биты с продажи.
+    // Сам бит и его файлы остаются в базе, поэтому его можно вернуть в каталог без повторной загрузки.
+    if (row.status === "pending") {
+      const { results: items = [] } = await env.DB.prepare(
+        "SELECT DISTINCT beat_id FROM order_items WHERE order_id=?"
+      ).bind(id).all();
+
+      await env.DB.prepare(
+        "UPDATE orders SET status='paid',paid_at=CURRENT_TIMESTAMP WHERE id=?"
+      ).bind(id).run();
+
+      for (const item of items) {
+        await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?")
+          .bind(item.beat_id).run();
+      }
+    }
 
     return json({ ok: true });
   }

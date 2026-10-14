@@ -240,7 +240,7 @@ async function loadAdminOrders(){
     $('#adminOrders').innerHTML=d.orders.length?'<div class="admin-orders-list">'+d.orders.map(o=>`<div class="admin-order"><div><strong>${esc(o.public_code)} · ${rub(o.total_amount)}</strong><small>${esc(o.customer_name)} ${esc(o.customer_telegram)} · ${esc(o.created_at)} · ${esc(o.status)}</small></div><div class="admin-actions">${o.status==='pending'?`<button class="small-btn" data-paid="${o.id}">Подтвердить оплату</button>`:''}${o.status==='paid'?`<button class="small-btn" data-delivered="${o.id}">Отметить выданным</button>`:''}</div></div>`).join('')+'</div>':'<p class="hint">Заказов пока нет.</p>';
     $$('[data-paid]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Подтвердить, что деньги реально поступили?'))return;
-      try{await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast('Оплата подтверждена');loadAdminOrders()}
+      try{await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast('Оплата подтверждена · бит снят с продажи');loadAdminOrders();loadAdminBeats();loadCatalog()}
       catch(e){toast(e.message,true)}
     });
     $$('[data-delivered]').forEach(b=>b.onclick=async()=>{
@@ -252,7 +252,7 @@ async function loadAdminOrders(){
 async function loadAdminBeats(){
   try{
     const d=await api('admin/beats');
-    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map(b=>`<div class="admin-beat"><div><strong>#${b.id} · ${esc(b.title)}</strong><small>${esc(b.genre)} · ${b.bpm} BPM · скидка ${b.discount}% · ${b.active?'активен':'скрыт'}</small></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Скрыть</button>`:`<button class="small-btn" data-show="${b.id}">Восстановить</button>`}</div></div>`).join('')+'</div>':'<p class="hint">Битов пока нет. Добавь первый бит во вкладке «Добавить бит».</p>';
+    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map(b=>`<div class="admin-beat"><div><strong>#${b.id} · ${esc(b.title)}</strong><small>${esc(b.genre)} · ${b.bpm} BPM · скидка ${b.discount}% · ${b.active?'в продаже':'снят с продажи'}</small></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Скрыть</button>`:`<button class="small-btn relist-btn" data-show="${b.id}">Выгрузить повторно ↗</button>`}</div></div>`).join('')+'</div>':'<p class="hint">Битов пока нет. Добавь первый бит во вкладке «Добавить бит».</p>';
     $$('[data-edit]').forEach(b=>b.onclick=()=>editBeat(d.beats.find(x=>x.id===Number(b.dataset.edit))));
     $$('[data-hide]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.hide,false));
     $$('[data-show]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.show,true));
