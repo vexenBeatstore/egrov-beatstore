@@ -223,7 +223,7 @@ function licenseInfo(beat, license) {
   };
 
   const x = map[license];
-  if (!x || Number(x[1]) < 0) return null;
+  if (!x || Number(x[1]) <= 0) return null;
 
   const discount = Math.min(
     90,
@@ -433,9 +433,9 @@ async function handle(request, env) {
 
         return {
           ...publicBeat,
-          has_mp3: Number(beat.mp3_price) >= 0,
-          has_wav: Number(beat.wav_price) >= 0,
-          has_stems: Number(beat.stems_price) >= 0,
+          has_mp3: Number(beat.mp3_price) > 0,
+          has_wav: Number(beat.wav_price) > 0,
+          has_stems: Number(beat.stems_price) > 0,
           licenses,
         };
       }),

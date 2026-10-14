@@ -27,6 +27,47 @@ function finalPrice(beat,license){
   return Math.round(p*(100-d)/100);
 }
 function available(beat){return ['mp3','wav','stems'].filter(k=>beat['has_'+k] || beat[k+'_key'])}
+function timeLabel(value){
+  if(!Number.isFinite(value)||value<0)return '0:00';
+  const m=Math.floor(value/60),s=Math.floor(value%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function bindAudioPlayers(root){
+  $$('[data-player]',root).forEach(player=>{
+    if(player.dataset.bound==='1')return;
+    player.dataset.bound='1';
+    const audio=$('.audio-source',player),play=$('[data-play]',player),seek=$('[data-seek]',player),volume=$('[data-volume]',player);
+    const current=$('[data-current]',player),duration=$('[data-duration]',player),status=$('[data-status]',player);
+    const updatePlay=()=>{
+      const playing=!audio.paused&&!audio.ended;
+      play.textContent=playing?'Ⅱ':'▶';
+      play.setAttribute('aria-label',playing?'Пауза':'Слушать демо');
+      player.classList.toggle('is-playing',playing);
+      status.textContent=playing?'СЕЙЧАС ИГРАЕТ':audio.ended?'ПРОСЛУШИВАНИЕ ЗАВЕРШЕНО':'ГОТОВО К ПРОСЛУШИВАНИЮ';
+    };
+    play.addEventListener('click',async()=>{
+      if(audio.paused){
+        document.querySelectorAll('.audio-source').forEach(other=>{if(other!==audio){other.pause();}});
+        try{await audio.play()}catch{status.textContent='НЕ УДАЛОСЬ ЗАГРУЗИТЬ ДЕМО';toast('Не удалось воспроизвести демо. Проверь аудиофайл.',true)}
+      }else audio.pause();
+      updatePlay();
+    });
+    audio.addEventListener('loadedmetadata',()=>{duration.textContent=timeLabel(audio.duration);seek.disabled=!Number.isFinite(audio.duration);});
+    audio.addEventListener('durationchange',()=>{duration.textContent=timeLabel(audio.duration);});
+    audio.addEventListener('timeupdate',()=>{
+      current.textContent=timeLabel(audio.currentTime);
+      if(Number.isFinite(audio.duration)&&audio.duration>0)seek.value=String(Math.round(audio.currentTime/audio.duration*1000));
+    });
+    audio.addEventListener('play',updatePlay);
+    audio.addEventListener('pause',updatePlay);
+    audio.addEventListener('ended',()=>{seek.value='0';updatePlay()});
+    audio.addEventListener('error',()=>{status.textContent='ДЕМО НЕДОСТУПНО';play.disabled=true;player.classList.add('player-error')});
+    seek.addEventListener('input',()=>{if(Number.isFinite(audio.duration)&&audio.duration>0){audio.currentTime=(Number(seek.value)/1000)*audio.duration;current.textContent=timeLabel(audio.currentTime)}});
+    volume.addEventListener('input',()=>{audio.volume=Number(volume.value);audio.muted=audio.volume===0});
+    audio.volume=Number(volume.value);
+    seek.disabled=true;
+  });
+}
 function renderCatalog(){
   const q=$('#search').value.trim().toLowerCase(),g=$('#genreFilter').value;
   const list=state.beats.filter(b=>(!g||b.genre===g)&&(!q||`${b.title} ${b.genre} ${b.artist} ${b.description}`.toLowerCase().includes(q)));
@@ -35,8 +76,9 @@ function renderCatalog(){
   if(!list.length){grid.innerHTML='';return}
   grid.innerHTML=list.map(b=>{
     const licenses=available(b);
-    return `<article class="beat-card"><div class="cover">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="Обложка ${esc(b.title)}">`:`<span class="cover-mark">VEXEN</span>`}<span class="cover-id">VX / ${String(b.id).padStart(3,'0')}</span><span class="cover-genre">${esc(b.genre)}</span></div><div class="beat-info"><div class="beat-title-row"><div><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div></div>${Number(b.discount)>0?`<span class="discount-badge">−${Number(b.discount)}%</span>`:''}</div><div class="beat-meta"><span>${esc(b.bpm)} BPM</span><span>${esc(b.musical_key)}</span><span>${esc(b.genre)}</span></div>${b.demo_key?`<audio class="demo-player" controls preload="none" src="${media(b.demo_key)}">Ваш браузер не поддерживает аудио.</audio>`:`<p class="hint">Демо пока не загружено</p>`}<div class="license-row"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}">${licenses.map(k=>`<option value="${k}">${({mp3:'MP3 License',wav:'WAV License',stems:'WAV + Stems'})[k]} — ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет файлов'}</span></div><button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ ДОБАВИТЬ В КОРЗИНУ</button></div></article>`
+    return `<article class="beat-card"><div class="cover">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="Обложка ${esc(b.title)}">`:`<span class="cover-mark">VEXEN</span>`}<span class="cover-id">VX / ${String(b.id).padStart(3,'0')}</span><span class="cover-genre">${esc(b.genre)}</span></div><div class="beat-info"><div class="beat-title-row"><div><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div></div>${Number(b.discount)>0?`<span class="discount-badge">−${Number(b.discount)}%</span>`:''}</div><div class="beat-meta"><span>${esc(b.bpm)} BPM</span><span>${esc(b.musical_key)}</span><span>${esc(b.genre)}</span></div>${b.demo_key?`<div class="audio-player" data-player><audio class="audio-source" preload="metadata" src="${media(b.demo_key)}"></audio><button class="player-play" type="button" aria-label="Слушать демо" data-play>▶</button><div class="player-main"><div class="player-topline"><span class="player-label">DEMO PREVIEW</span><span class="player-time"><span data-current>0:00</span> / <span data-duration>--:--</span></span></div><input class="player-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Перемотка" data-seek><div class="player-bottomline"><span class="player-status" data-status>ГОТОВО К ПРОСЛУШИВАНИЮ</span><label class="volume-wrap" aria-label="Громкость">VOL <input class="player-volume" type="range" min="0" max="1" value="0.85" step="0.05" data-volume></label></div></div></div>`:`<p class="hint">Демо пока не загружено</p>`}<div class="license-row"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}">${licenses.map(k=>`<option value="${k}">${({mp3:'MP3 License',wav:'WAV License',stems:'WAV + Stems'})[k]} — ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет файлов'}</span></div><button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ ДОБАВИТЬ В КОРЗИНУ</button></div></article>`
   }).join('');
+  bindAudioPlayers(grid);
   $$('.license-select',grid).forEach(s=>s.addEventListener('change',()=>{
     const b=state.beats.find(x=>x.id===Number(s.dataset.beat));
     $('.license-price',s.closest('.beat-info')).textContent=rub(finalPrice(b,s.value));
@@ -102,8 +144,10 @@ async function checkout(event){
     state.lastOrder=order;
     localStorage.setItem('vexen_order_token',order.access_token);
     $('#checkoutResult').classList.remove('hidden');
-    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. После оплаты файлы будут отправлены вручную в Telegram: <strong>${esc($('#customerTelegram').value)}</strong>.</p><div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc($('#customerTelegram').value)} ${esc(order.code)} ${esc(items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', '))}</div><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью. В нём должны быть твой Telegram, номер заказа и выбранная лицензия.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. Не отправляй ключ посторонним. На этом устройстве статус можно открыть через «Мой заказ» внизу сайта.</p>`;
+    const paymentComment = `${$('#customerTelegram').value.trim()} ${order.code} ${items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', ')}`;
+    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. После проверки оплаты полные файлы будут отправлены вручную в Telegram: <strong>${esc($('#customerTelegram').value)}</strong>.</p><div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc(paymentComment)}</div><button class="copy-btn" id="copyComment">КОПИРОВАТЬ КОММЕНТАРИЙ</button><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью. В нём должны быть твой Telegram, номер заказа и выбранная лицензия.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. Не отправляй ключ посторонним. На этом устройстве статус можно открыть через «Мой заказ» внизу сайта.</p>`;
     $('#copyBank').onclick=()=>navigator.clipboard.writeText(order.bank_details).then(()=>toast('Реквизиты скопированы')).catch(()=>toast('Не удалось скопировать',true));
+    $('#copyComment').onclick=()=>navigator.clipboard.writeText(paymentComment).then(()=>toast('Комментарий скопирован')).catch(()=>toast('Не удалось скопировать',true));
     $('#openOrder').onclick=()=>{hideModal('checkoutModal');showOrder()};
     $('#copyOrderToken').onclick=()=>navigator.clipboard.writeText(order.access_token).then(()=>toast('Ключ доступа скопирован — сохрани его в надёжном месте')).catch(()=>toast('Не удалось скопировать ключ',true));
     state.cart=[];
@@ -229,6 +273,8 @@ $('#checkoutOpen').onclick=()=>{
 };
 $('#checkoutForm').addEventListener('submit',checkout);
 $('#adminOpen').onclick=openAdmin;
+$('#myOrderOpen').onclick=showOrder;
+$('#footerOrderOpen').onclick=showOrder;
 
 /* Загрузка файлов по одному, затем сохранение карточки */
 $('#beatForm').addEventListener('submit', async e => {
@@ -317,11 +363,6 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
-$('#footerOrderButton');
-const footerOrder=document.createElement('button');
-footerOrder.className='text-btn';
-footerOrder.textContent='МОЙ ЗАКАЗ';
-footerOrder.onclick=showOrder;
-$('footer').insertBefore(footerOrder,$('#adminOpen'));
+
 renderCart();
 loadCatalog();
