@@ -32,41 +32,60 @@ function timeLabel(value){
   const m=Math.floor(value/60),s=Math.floor(value%60);
   return `${m}:${String(s).padStart(2,'0')}`;
 }
-function bindAudioPlayers(root){
-  $$('[data-player]',root).forEach(player=>{
-    if(player.dataset.bound==='1')return;
-    player.dataset.bound='1';
-    const audio=$('.audio-source',player),play=$('[data-play]',player),seek=$('[data-seek]',player),volume=$('[data-volume]',player);
-    const current=$('[data-current]',player),duration=$('[data-duration]',player),status=$('[data-status]',player);
-    const updatePlay=()=>{
-      const playing=!audio.paused&&!audio.ended;
-      play.textContent=playing?'Ⅱ':'▶';
-      play.setAttribute('aria-label',playing?'Пауза':'Слушать демо');
-      player.classList.toggle('is-playing',playing);
-      status.textContent=playing?'СЕЙЧАС ИГРАЕТ':audio.ended?'ПРОСЛУШИВАНИЕ ЗАВЕРШЕНО':'ГОТОВО К ПРОСЛУШИВАНИЮ';
-    };
-    play.addEventListener('click',async()=>{
-      if(audio.paused){
-        document.querySelectorAll('.audio-source').forEach(other=>{if(other!==audio){other.pause();}});
-        try{await audio.play()}catch{status.textContent='НЕ УДАЛОСЬ ЗАГРУЗИТЬ ДЕМО';toast('Не удалось воспроизвести демо. Проверь аудиофайл.',true)}
-      }else audio.pause();
-      updatePlay();
-    });
-    audio.addEventListener('loadedmetadata',()=>{duration.textContent=timeLabel(audio.duration);seek.disabled=!Number.isFinite(audio.duration);});
-    audio.addEventListener('durationchange',()=>{duration.textContent=timeLabel(audio.duration);});
-    audio.addEventListener('timeupdate',()=>{
-      current.textContent=timeLabel(audio.currentTime);
-      if(Number.isFinite(audio.duration)&&audio.duration>0)seek.value=String(Math.round(audio.currentTime/audio.duration*1000));
-    });
-    audio.addEventListener('play',updatePlay);
-    audio.addEventListener('pause',updatePlay);
-    audio.addEventListener('ended',()=>{seek.value='0';updatePlay()});
-    audio.addEventListener('error',()=>{status.textContent='ДЕМО НЕДОСТУПНО';play.disabled=true;player.classList.add('player-error')});
-    seek.addEventListener('input',()=>{if(Number.isFinite(audio.duration)&&audio.duration>0){audio.currentTime=(Number(seek.value)/1000)*audio.duration;current.textContent=timeLabel(audio.currentTime)}});
-    volume.addEventListener('input',()=>{audio.volume=Number(volume.value);audio.muted=audio.volume===0});
-    audio.volume=Number(volume.value);
-    seek.disabled=true;
-  });
+const audioUI = { beatId: null, peaks: [], waveformLoading: false, waveformToken: 0 };
+function drawWaveform(){
+  const canvas=$('#globalWaveform'); if(!canvas)return;
+  const rect=canvas.getBoundingClientRect(); if(!rect.width||!rect.height)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);
+  const count=Math.max(40,Math.floor(rect.width/3.2));
+  const peaks=audioUI.peaks;const audio=$('#globalAudio');const progress=audio.duration>0?audio.currentTime/audio.duration:0;
+  const gap=Math.max(1,Math.round(dpr)),barW=Math.max(1,(w-gap*(count-1))/count);
+  for(let i=0;i<count;i++){
+    const ix=peaks.length?Math.floor(i/count*peaks.length):0;const seed=((i*37+13)%29)/100;
+    const amp=peaks.length?peaks[ix]:(.12+Math.abs(Math.sin(i*.73))*.18+seed);
+    const bh=Math.max(3*dpr,amp*(h*.86));const x=i*(barW+gap),y=(h-bh)/2;
+    ctx.fillStyle=(i/count)<=progress?'#c5ff3d':'#65705e';ctx.globalAlpha=(i/count)<=progress?1:.78;
+    ctx.beginPath();ctx.roundRect(x,y,barW,bh,Math.min(barW/2,bh/2));ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+async function loadWaveform(url){
+  const token=++audioUI.waveformToken;audioUI.peaks=[];audioUI.waveformLoading=true;drawWaveform();
+  try{
+    const response=await fetch(url,{credentials:'same-origin'});if(!response.ok)throw new Error('waveform fetch failed');
+    const buffer=await response.arrayBuffer();const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)throw new Error('Web Audio unavailable');
+    const context=new AudioContextClass();const decoded=await context.decodeAudioData(buffer.slice(0));const channel=decoded.getChannelData(0),bucketSize=Math.max(1,Math.floor(channel.length/900)),peaks=[];
+    for(let i=0;i<channel.length;i+=bucketSize){let peak=0;for(let j=i;j<Math.min(i+bucketSize,channel.length);j++)peak=Math.max(peak,Math.abs(channel[j]));peaks.push(peak)}
+    const max=Math.max(...peaks,0.001);audioUI.peaks=peaks.map(v=>Math.max(.035,v/max));await context.close();
+  }catch(e){/* visual fallback if the browser cannot decode the preview */}
+  if(token===audioUI.waveformToken){audioUI.waveformLoading=false;drawWaveform()}
+}
+function selectBeatForPlayer(beat,autoplay=true){
+  if(!beat||!beat.demo_key){toast('Для этого бита демо пока не загружено.',true);return}
+  const audio=$('#globalAudio'),url=media(beat.demo_key);const same=audioUI.beatId===beat.id;
+  if(!same){audio.pause();audioUI.beatId=beat.id;audio.src=url;audio.load();
+    $('#globalTrackTitle').textContent=beat.title||'Без названия';$('#globalTrackArtist').textContent=beat.artist||'VEXEN';
+    $('#globalTrackCover').innerHTML=beat.cover_key?`<img src="${media(beat.cover_key)}" alt="">`:'<span>VX</span>';
+    $('#globalPlayer').classList.add('has-track');$('#globalPlayerStatus').textContent='ЗАГРУЖАЕМ ДЕМО';$('#globalCurrent').textContent='0:00';$('#globalDuration').textContent='--:--';
+    loadWaveform(url);
+  }
+  if(autoplay){document.querySelectorAll('.audio-source').forEach(a=>a.pause());audio.play().then(()=>{$('#globalPlayerStatus').textContent='СЕЙЧАС ИГРАЕТ'}).catch(()=>{$('#globalPlayerStatus').textContent='НАЖМИ PLAY ДЛЯ ПРОСЛУШИВАНИЯ';toast('Не удалось воспроизвести демо. Проверь аудиофайл.',true)});}
+  drawWaveform();
+}
+function initGlobalPlayer(){
+  const audio=$('#globalAudio'),canvas=$('#globalWaveform'),seek=$('#globalSeek');if(!audio||audio.dataset.bound)return;audio.dataset.bound='1';
+  $('#globalPlay').addEventListener('click',async()=>{if(!audio.src){toast('Сначала выбери бит в каталоге.');return}if(audio.paused){try{await audio.play()}catch{toast('Не удалось запустить демо.',true)}}else audio.pause()});
+  audio.addEventListener('play',()=>{$('#globalPlay').textContent='Ⅱ';$('#globalPlay').setAttribute('aria-label','Пауза');$('#globalPlayerStatus').textContent='СЕЙЧАС ИГРАЕТ';document.querySelectorAll('.card-play').forEach(b=>b.textContent=Number(b.dataset.playBeat)===audioUI.beatId?'Ⅱ СЛУШАЕТСЯ':'▶ СЛУШАТЬ ДЕМО')});
+  audio.addEventListener('pause',()=>{$('#globalPlay').textContent='▶';$('#globalPlay').setAttribute('aria-label','Продолжить');document.querySelectorAll('.card-play').forEach(b=>b.textContent='▶ СЛУШАТЬ ДЕМО');if(audio.src&&audio.currentTime>0)$('#globalPlayerStatus').textContent='ПАУЗА'});
+  audio.addEventListener('loadedmetadata',()=>{$('#globalDuration').textContent=timeLabel(audio.duration);seek.disabled=!Number.isFinite(audio.duration);drawWaveform()});
+  audio.addEventListener('timeupdate',()=>{$('#globalCurrent').textContent=timeLabel(audio.currentTime);if(audio.duration>0)seek.value=String(Math.round(audio.currentTime/audio.duration*1000));drawWaveform()});
+  audio.addEventListener('ended',()=>{$('#globalPlayerStatus').textContent='ДЕМО ЗАВЕРШЕНО';$('#globalPlay').textContent='▶';document.querySelectorAll('.card-play').forEach(b=>b.textContent='▶ СЛУШАТЬ ДЕМО');drawWaveform()});
+  audio.addEventListener('error',()=>{$('#globalPlayerStatus').textContent='ДЕМО НЕДОСТУПНО';toast('Демо не загрузилось. Проверь файл в админ-панели.',true)});
+  seek.addEventListener('input',()=>{if(audio.duration>0){audio.currentTime=Number(seek.value)/1000*audio.duration;drawWaveform()}});
+  canvas.addEventListener('click',e=>{if(audio.duration>0){const r=canvas.getBoundingClientRect();audio.currentTime=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))*audio.duration;drawWaveform()}});
+  $('#globalVolume').addEventListener('input',e=>{audio.volume=Number(e.target.value);audio.muted=audio.volume===0});audio.volume=.85;window.addEventListener('resize',drawWaveform);
 }
 function renderCatalog(){
   const q=$('#search').value.trim().toLowerCase(),g=$('#genreFilter').value;
@@ -76,9 +95,9 @@ function renderCatalog(){
   if(!list.length){grid.innerHTML='';return}
   grid.innerHTML=list.map(b=>{
     const licenses=available(b);
-    return `<article class="beat-card"><div class="cover">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="Обложка ${esc(b.title)}">`:`<span class="cover-mark">VEXEN</span>`}<span class="cover-id">VX / ${String(b.id).padStart(3,'0')}</span><span class="cover-genre">${esc(b.genre)}</span></div><div class="beat-info"><div class="beat-title-row"><div><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div></div>${Number(b.discount)>0?`<span class="discount-badge">−${Number(b.discount)}%</span>`:''}</div><div class="beat-meta"><span>${esc(b.bpm)} BPM</span><span>${esc(b.musical_key)}</span><span>${esc(b.genre)}</span></div>${b.demo_key?`<div class="audio-player" data-player><audio class="audio-source" preload="metadata" src="${media(b.demo_key)}"></audio><button class="player-play" type="button" aria-label="Слушать демо" data-play>▶</button><div class="player-main"><div class="player-topline"><span class="player-label">DEMO PREVIEW</span><span class="player-time"><span data-current>0:00</span> / <span data-duration>--:--</span></span></div><input class="player-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Перемотка" data-seek><div class="player-bottomline"><span class="player-status" data-status>ГОТОВО К ПРОСЛУШИВАНИЮ</span><label class="volume-wrap" aria-label="Громкость">VOL <input class="player-volume" type="range" min="0" max="1" value="0.85" step="0.05" data-volume></label></div></div></div>`:`<p class="hint">Демо пока не загружено</p>`}<div class="license-row"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}">${licenses.map(k=>`<option value="${k}">${({mp3:'MP3 License',wav:'WAV License',stems:'WAV + Stems'})[k]} — ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет файлов'}</span></div><button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ ДОБАВИТЬ В КОРЗИНУ</button></div></article>`
+    return `<article class="beat-card"><div class="cover">${b.cover_key?`<img loading="lazy" src="${media(b.cover_key)}" alt="Обложка ${esc(b.title)}">`:`<span class="cover-mark">VEXEN</span>`}<span class="cover-id">VX / ${String(b.id).padStart(3,'0')}</span><span class="cover-genre">${esc(b.genre)}</span></div><div class="beat-info"><div class="beat-title-row"><div><h3 class="beat-title">${esc(b.title)}</h3><div class="beat-artist">${esc(b.artist||'VEXEN')}</div></div>${Number(b.discount)>0?`<span class="discount-badge">−${Number(b.discount)}%</span>`:''}</div><div class="beat-meta"><span>${esc(b.bpm)} BPM</span><span>${esc(b.musical_key)}</span><span>${esc(b.genre)}</span></div>${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Слушать ${esc(b.title)}">▶ <span>СЛУШАТЬ ДЕМО</span></button>`:`<p class="hint">Демо пока не загружено</p>`}<div class="license-row"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}">${licenses.map(k=>`<option value="${k}">${({mp3:'MP3 License',wav:'WAV License',stems:'WAV + Stems'})[k]} — ${rub(finalPrice(b,k))}</option>`).join('')}</select><span class="license-price">${licenses.length?rub(finalPrice(b,licenses[0])):'Нет файлов'}</span></div><button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ ДОБАВИТЬ В КОРЗИНУ</button></div></article>`
   }).join('');
-  bindAudioPlayers(grid);
+  $$('[data-play-beat]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.playBeat));selectBeatForPlayer(b,true)}));
   $$('.license-select',grid).forEach(s=>s.addEventListener('change',()=>{
     const b=state.beats.find(x=>x.id===Number(s.dataset.beat));
     $('.license-price',s.closest('.beat-info')).textContent=rub(finalPrice(b,s.value));
@@ -365,4 +384,5 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
 $('#year').textContent=new Date().getFullYear();
 
 renderCart();
+initGlobalPlayer();
 loadCatalog();
