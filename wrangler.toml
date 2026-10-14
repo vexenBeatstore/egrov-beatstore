@@ -1,12 +1,9 @@
+
 name = "vexen-beatstore-site"
-compatibility_date = "2026-10-14"
+compatibility_date = "2025-10-01"
 pages_build_output_dir = "./public"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "vexen-beatstore-site-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
-
-[[r2_buckets]]
-binding = "AUDIO"
-bucket_name = "vexen-beatstore-audio"
+database_name = "vexen-beatstore-db"
+database_id = "1951eed4-69ac-422a-97cc-1971ba71179c"
