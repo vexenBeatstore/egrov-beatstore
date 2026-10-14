@@ -481,3 +481,53 @@ html{scroll-padding-top:82px}body{font-family:'DM Sans',system-ui,-apple-system,
 .admin-empty>span{font-size:28px;color:#ff6259}.admin-empty strong{color:#f4f1ef;font-size:14px}.admin-empty p{margin:0;font-size:11px;line-height:1.6}
 @media(max-width:760px){.admin-beat{grid-template-columns:52px minmax(0,1fr);gap:12px;padding:12px}.admin-beat-art{width:52px;height:58px;padding:7px}.admin-beat-main{grid-column:2}.admin-beat .admin-actions{grid-column:1/-1;justify-content:flex-start;padding-top:10px;border-top:1px solid #ffffff0d}.admin-beat .admin-actions .small-btn{flex:0 1 auto}.admin-beat-prices{gap:9px}}
 @media(max-width:420px){.admin-beat-titleline{align-items:flex-start;flex-direction:column;gap:5px}.admin-beat-prices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.admin-beat-prices span{flex-direction:column;align-items:flex-start;gap:2px}.admin-beat .admin-actions .small-btn{flex:1 1 130px}}
+
+/* VEXEN acid-green refresh + BeatStars-inspired vertical track rows */
+:root{--bg:#080a08;--panel:#101410;--panel2:#171d16;--line:#293329;--text:#f4f7f1;--muted:#8d978b;--acid:#b7ff00;--acid2:#8fce00;--danger:#ff6b6b;--red:var(--acid)}
+::selection{background:var(--acid);color:#080a08}
+.topbar nav a:hover,.nav-link-btn:hover,.text-btn:hover{color:var(--acid)}
+.nav-admin{border-color:#b7ff005c;color:var(--acid)}.nav-admin:hover{background:var(--acid);border-color:var(--acid);color:#080a08}
+.cart-btn span{background:var(--acid);color:#080a08}
+.eyebrow,.hero-text-only h1 em,.market-heading h2 em,.about-section h2 em{color:var(--acid)}
+.eyebrow i,.status-dot{background:var(--acid);box-shadow:0 0 12px #b7ff0040}
+.primary-btn{background:var(--acid);color:#080a08}.primary-btn:hover{background:#d0ff66;color:#080a08}
+.hero-signature-mark:before{border-color:#b7ff0033;box-shadow:0 0 0 24px #b7ff0008,0 0 0 48px #b7ff0005}
+.signature-wave i{background:var(--acid)}.signature-wave i:nth-child(7n){background:#f4f7f1}
+.hero-text-only h1{max-width:900px}
+.genre-nav.active{background:#b7ff0010;color:#f4f7f1;border-color:#b7ff003d}.genre-nav.active span{color:var(--acid)}
+.search-wrap:focus-within{border-color:#b7ff0088;box-shadow:0 0 0 3px #b7ff000d}
+/* The catalog is a list of individual track rows, never a table/grid of cards. */
+.track-list-head{display:none!important}
+#beatGrid.beat-grid{display:flex!important;flex-direction:column;gap:0;border-top:1px solid #ffffff12}
+#beatGrid .beat-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(155px,auto);grid-template-areas:"identity license" "details actions";align-items:center;column-gap:22px;row-gap:8px;padding:17px 16px;min-height:0;background:transparent;border:0;border-bottom:1px solid #ffffff12;border-radius:0;transition:background .18s ease}
+#beatGrid .beat-row:hover{background:#b7ff0008;border-color:#ffffff18}
+#beatGrid .track-identity{grid-area:identity;min-width:0;gap:13px}
+#beatGrid .track-number{width:42px;height:42px;flex-basis:42px;border:1px solid #b7ff0030;border-radius:7px;background:linear-gradient(145deg,#1b2810,#0c100b);color:var(--acid);font-size:12px}
+#beatGrid .track-copy{min-width:0}
+#beatGrid .track-copy .beat-title{font:600 15px/1.35 'Space Grotesk',sans-serif;letter-spacing:-.035em;color:#f4f7f1;overflow-wrap:anywhere}
+#beatGrid .track-mobile-meta{margin-top:4px;color:#8d978b;font-size:10px;letter-spacing:.015em}
+#beatGrid .track-details{grid-area:details;display:flex;align-items:center;gap:9px;padding-left:55px;color:#899286;font-size:10px}
+#beatGrid .track-details span,#beatGrid .track-details b{font-weight:500;color:#aeb7a9}
+#beatGrid .track-details span:last-child{color:var(--acid)}
+#beatGrid .track-license{grid-area:license;justify-self:end;width:100%;max-width:210px}
+#beatGrid .track-license select,#beatGrid .license-select{width:100%;background:#101510;border:1px solid #303a2b;color:#eaf2e3;border-radius:7px;padding:10px 30px 10px 11px;font-size:11px}
+#beatGrid .track-license select:focus{outline:none;border-color:#b7ff0080}
+#beatGrid .track-actions{grid-area:actions;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+#beatGrid .card-play{width:34px;height:34px;flex-basis:34px;border-radius:50%;background:#171e13;border:1px solid #354329;color:var(--acid)}
+#beatGrid .card-play:hover,#beatGrid .card-play.is-playing{background:var(--acid);border-color:var(--acid);color:#080a08}
+#beatGrid .add-btn{min-height:35px;padding:9px 12px;background:var(--acid);border:1px solid var(--acid);color:#080a08;border-radius:7px;font-weight:800;letter-spacing:.035em}
+#beatGrid .add-btn:hover{background:#d0ff66;border-color:#d0ff66;color:#080a08}
+#beatGrid .no-demo{font-size:9px;color:#727b6d;letter-spacing:.08em}
+.market-stats b{color:var(--acid)}
+.audio-player,.global-player{border-color:#2a3425}.player-play,.global-play{background:var(--acid);color:#080a08}.player-label{color:var(--acid)}.player-seek,.player-volume,.global-waveform{accent-color:var(--acid)}
+.add-btn:hover,.icon-btn:hover{border-color:var(--acid)}
+/* Consistent acid-green controls in the admin panel too */
+#adminModal .eyebrow{color:#a8b19f}#adminModal .eyebrow:before{background:var(--acid)}
+#adminModal .admin-tabs .tab.active{background:var(--acid);color:#080a08}
+.admin-form input:focus,.admin-form textarea:focus,.admin-form select:focus,.modal-card input:focus,.modal-card select:focus,.modal-card textarea:focus{border-color:#b7ff0088;box-shadow:0 0 0 3px #b7ff000d}
+.upload-icon,.upload-symbol{color:var(--acid)}.upload-dropzone:hover{border-color:#b7ff0088;background:#11170d}
+.admin-beat:hover,.admin-order:hover{border-color:#b7ff0040}.admin-beat-art{background:linear-gradient(145deg,#1b2810,#101410 75%);border-color:#b7ff002a;color:var(--acid)}.admin-beat-art>span{color:var(--acid)}.mini-wave b{background:var(--acid)}
+.admin-beat-status.is-live i{background:var(--acid);box-shadow:0 0 0 3px #b7ff0018}.admin-beat-status.is-hidden i{background:#ff6b6b}
+.admin-beat-prices em{color:var(--acid)}.admin-beat .small-btn.relist-btn{background:var(--acid);color:#080a08;border-color:var(--acid)}.admin-beat .small-btn.relist-btn:hover{background:#d0ff66}
+@media(max-width:760px){#beatGrid .beat-row{grid-template-columns:minmax(0,1fr) auto;column-gap:12px;padding:14px 8px}#beatGrid .track-license{max-width:180px}#beatGrid .track-details{padding-left:55px}}
+@media(max-width:520px){#beatGrid .beat-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"identity" "details" "license" "actions";gap:9px;padding:15px 8px}#beatGrid .track-details{padding-left:55px;flex-wrap:wrap}#beatGrid .track-license{justify-self:stretch;max-width:none;padding-left:55px}#beatGrid .track-actions{justify-content:flex-start;padding-left:55px}#beatGrid .add-btn{flex:1;max-width:220px}.market-stats{align-self:flex-start}}
