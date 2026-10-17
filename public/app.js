@@ -395,10 +395,20 @@ $('#beatForm').addEventListener('submit', async e => {
 });
 
 $('#adminLogout').onclick=async()=>{
-  await api('auth/logout',{method:'POST',body:'{}'});
-  state.admin=false;
-  checkAdmin();
-  toast('Вы вышли из админ-панели');
+  const logoutButton = $('#adminLogout');
+  logoutButton.disabled = true;
+  try {
+    await api('auth/logout',{method:'POST',body:'{}'});
+    state.admin = false;
+    $('#adminApp').classList.add('hidden');
+    $('#adminLogin').classList.remove('hidden');
+    hideModal('adminModal');
+    toast('Вы вышли из админ-панели');
+  } catch (e) {
+    toast(e.message || 'Не удалось выйти из аккаунта', true);
+  } finally {
+    logoutButton.disabled = false;
+  }
 };
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
