@@ -419,7 +419,7 @@ $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.data
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   const x=b.dataset.close;
   if(x==='cart')hideModal('cartDrawer');
-  else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
+  else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal',account:'accountModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
 
