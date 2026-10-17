@@ -60,6 +60,45 @@ function cookie(request, name) {
   return match ? decodeURIComponent(match.slice(name.length + 1)) : "";
 }
 
+
+async function verifyTelegramLogin(data, botToken) {
+  if (!botToken || !data || typeof data !== "object") return false;
+  const receivedHash = String(data.hash || "");
+  const authDate = Number(data.auth_date || 0);
+  if (!receivedHash || !authDate || Math.abs(Date.now() / 1000 - authDate) > 300) return false;
+  const check = Object.keys(data).filter(k => k !== "hash" && data[k] !== undefined && data[k] !== null).sort().map(k => `${k}=${data[k]}`).join("\n");
+  const secret = await sha256(botToken);
+  const key = await crypto.subtle.importKey("raw", secret, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const digest = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(check)));
+  const expected = Array.from(digest, b => b.toString(16).padStart(2, "0")).join("");
+  let diff = expected.length ^ receivedHash.length;
+  for (let i = 0; i < Math.max(expected.length, receivedHash.length); i++) diff |= (expected.charCodeAt(i) || 0) ^ (receivedHash.charCodeAt(i) || 0);
+  return diff === 0;
+}
+async function makeCustomerSession(env, user) {
+  const payload = b64url(enc.encode(JSON.stringify({ uid: Number(user.id), name: user.display_name || "Пользователь", provider: user.provider, exp: Math.floor(Date.now()/1000) + 60*60*24*30 })));
+  return payload + "." + b64url(await hmac(env.SESSION_SECRET, payload));
+}
+async function readCustomerSession(request, env) {
+  try {
+    if (!env.SESSION_SECRET) return null;
+    const token = cookie(request, "egrov_customer"); const [payload, sig] = token.split(".");
+    if (!payload || !sig || b64url(await hmac(env.SESSION_SECRET, payload)) !== sig) return null;
+    const obj = JSON.parse(new TextDecoder().decode(unb64url(payload)));
+    if (!obj.uid || obj.exp < Date.now()/1000) return null;
+    const user = await env.DB.prepare("SELECT id, provider, provider_id, display_name, email, avatar_url FROM users WHERE id = ?").bind(obj.uid).first();
+    return user || null;
+  } catch { return null; }
+}
+function customerCookie(request, token, maxAge=2592000) {
+  const secure = new URL(request.url).protocol === "https:" ? "Secure; " : "";
+  return `egrov_customer=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+}
+async function saveCustomer(env, provider, providerId, name, email=null, avatar=null) {
+  await env.DB.prepare(`INSERT INTO users(provider, provider_id, display_name, email, avatar_url, last_login_at) VALUES(?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(provider, provider_id) DO UPDATE SET display_name=excluded.display_name, email=COALESCE(excluded.email, users.email), avatar_url=COALESCE(excluded.avatar_url, users.avatar_url), last_login_at=CURRENT_TIMESTAMP`).bind(provider, String(providerId), String(name || "Пользователь").slice(0,160), email, avatar).run();
+  return await env.DB.prepare("SELECT id, provider, provider_id, display_name, email, avatar_url FROM users WHERE provider = ? AND provider_id = ?").bind(provider, String(providerId)).first();
+}
+
 async function makeSession(env, telegramUser) {
   const payload = b64url(
     enc.encode(
@@ -252,6 +291,44 @@ async function handle(request, env) {
         env.TELEGRAM_BOT_USERNAME || "EGROVBeatStoreBot"
       ).replace(/^@/, ""),
     });
+  }
+
+  /* ---------------- CUSTOMER AUTH ---------------- */
+  if (path === "auth/customer/telegram" && method === "POST") {
+    let data; try { data = await request.json(); } catch { return fail("Некорректный JSON"); }
+    if (!env.BOT_TOKEN || !env.SESSION_SECRET) return fail("Telegram-вход не настроен: добавьте BOT_TOKEN и SESSION_SECRET в Cloudflare.", 503);
+    if (!(await verifyTelegramLogin(data, env.BOT_TOKEN))) return fail("Не удалось проверить Telegram-вход. Обнови страницу и попробуй ещё раз.", 401);
+    const user = await saveCustomer(env, "telegram", data.id, [data.first_name, data.last_name].filter(Boolean).join(" ") || data.username || "Telegram пользователь", null, data.photo_url || null);
+    const token = await makeCustomerSession(env, user);
+    return json({ok:true, name:user.display_name, provider:user.provider}, 200, {"Set-Cookie":customerCookie(request, token)});
+  }
+  if (path === "auth/customer/me" && method === "GET") {
+    const user = await readCustomerSession(request, env);
+    return user ? json({authenticated:true, id:user.id, name:user.display_name, email:user.email, provider:user.provider, avatar_url:user.avatar_url}) : fail("Не выполнен вход.", 401);
+  }
+  if (path === "auth/customer/logout" && method === "POST") return json({ok:true}, 200, {"Set-Cookie":customerCookie(request, "", 0)});
+  if (path === "auth/google/start" && method === "GET") {
+    if (!env.GOOGLE_CLIENT_ID || !env.SESSION_SECRET) return new Response("Google OAuth не настроен. Добавь GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET и GOOGLE_REDIRECT_URI в Cloudflare Pages → Settings → Variables and Secrets.", {status:503, headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}});
+    const state = randomToken();
+    const redirectUri = env.GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`;
+    const target = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    target.searchParams.set("client_id", env.GOOGLE_CLIENT_ID); target.searchParams.set("redirect_uri", redirectUri); target.searchParams.set("response_type", "code"); target.searchParams.set("scope", "openid email profile"); target.searchParams.set("state", state); target.searchParams.set("prompt", "select_account");
+    const secure = url.protocol === "https:" ? "Secure; " : "";
+    return new Response(null,{status:302,headers:{Location:target.toString(),"Cache-Control":"no-store","Set-Cookie":`egrov_google_state=${encodeURIComponent(state)}; HttpOnly; ${secure}SameSite=Lax; Path=/api/auth/google; Max-Age=600`}});
+  }
+  if (path === "auth/google/callback" && method === "GET") {
+    const state = url.searchParams.get("state") || ""; const savedState = cookie(request,"egrov_google_state"); const code = url.searchParams.get("code") || "";
+    const clearState = `egrov_google_state=; HttpOnly; ${url.protocol === "https:" ? "Secure; " : ""}SameSite=Lax; Path=/api/auth/google; Max-Age=0`;
+    if (!state || !savedState || state !== savedState || !code) return new Response("Проверка OAuth state не пройдена. Вернись на сайт и повтори вход.",{status:400,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState,"Cache-Control":"no-store"}});
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.SESSION_SECRET) return new Response("Google OAuth не настроен в Cloudflare.",{status:503,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
+    const redirectUri = env.GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`;
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({code,client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,redirect_uri:redirectUri,grant_type:"authorization_code"})});
+    const tokens = await tokenResponse.json(); if (!tokenResponse.ok || !tokens.access_token) return new Response("Google не подтвердил вход. Попробуй ещё раз.",{status:401,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
+    const profileResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo",{headers:{Authorization:`Bearer ${tokens.access_token}`}}); const profile = await profileResponse.json();
+    if (!profileResponse.ok || !profile.sub || profile.email_verified !== true) return new Response("Не удалось подтвердить Google-аккаунт.",{status:401,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
+    const user = await saveCustomer(env,"google",profile.sub,profile.name || profile.email,profile.email,profile.picture || null); const session = await makeCustomerSession(env,user);
+    const headers = new Headers({Location:`${url.origin}/?auth=success`,"Cache-Control":"no-store"}); headers.append("Set-Cookie", clearState); headers.append("Set-Cookie", customerCookie(request,session));
+    return new Response(null,{status:302,headers});
   }
 
   /* ---------------- TELEGRAM ADMIN AUTH ---------------- */

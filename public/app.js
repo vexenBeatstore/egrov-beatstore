@@ -293,10 +293,22 @@ $('#checkoutOpen').onclick=()=>{
 };
 $('#checkoutForm').addEventListener('submit',checkout);
 $('#adminOpen').onclick=openAdmin;
+$('#accountOpen').onclick=openAccount;
+$('#accountLogout').onclick=logoutCustomer;
+
 $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
 
+async function openAccount(){showModal('accountModal');await loadCustomerTelegram();await checkCustomer();}
+async function loadCustomerTelegram(){
+  const target=$('#customerTelegramWidget');if(target.dataset.loaded)return;
+  try{const c=await api('config');const script=document.createElement('script');script.src='https://telegram.org/js/telegram-widget.js?22';script.async=true;script.setAttribute('data-telegram-login',c.bot_username||state.botUsername);script.setAttribute('data-size','large');script.setAttribute('data-userpic','false');script.setAttribute('data-onauth','onCustomerTelegramAuth(user)');script.setAttribute('data-request-access','write');target.appendChild(script);target.dataset.loaded='1';}
+  catch(e){$('#accountMessage').textContent='Не удалось загрузить Telegram-вход: '+e.message;}
+}
+window.onCustomerTelegramAuth=async user=>{try{await api('auth/customer/telegram',{method:'POST',body:JSON.stringify(user)});await checkCustomer();toast('Вход через Telegram выполнен');}catch(e){$('#accountMessage').textContent=e.message;toast(e.message,true)}};
+async function checkCustomer(){try{const u=await api('auth/customer/me');$('#accountTitle').textContent='Твой аккаунт';$('#accountStatus').classList.remove('hidden');$('#accountStatus').innerHTML='<strong>'+esc(u.name||'Пользователь')+'</strong><span>'+esc(u.provider==='google'?'Google':'Telegram')+' · вход выполнен</span>';$('#customerTelegramLogin').classList.add('hidden');$('#googleLogin').classList.add('hidden');$('#accountLogout').classList.remove('hidden');$('#accountOpen').textContent='Аккаунт';$('#accountMessage').textContent='';}catch{$('#accountTitle').textContent='Вход / регистрация';$('#accountStatus').classList.add('hidden');$('#customerTelegramLogin').classList.remove('hidden');$('#googleLogin').classList.remove('hidden');$('#accountLogout').classList.add('hidden');$('#accountOpen').textContent='Войти';}}
+async function logoutCustomer(){try{await api('auth/customer/logout',{method:'POST'});toast('Вы вышли из аккаунта');await checkCustomer();}catch(e){toast(e.message,true)}}
 function setUploadStep(step){
   const current=Math.min(3,Math.max(1,Number(step)||1));
   $$('[data-step-panel]').forEach(panel=>{const active=Number(panel.dataset.stepPanel)===current;panel.classList.toggle('hidden',!active);$$('input,textarea,select',panel).forEach(field=>{if(field.dataset.stepRequired==='1'||field.required)field.dataset.stepRequired='1';field.required=active&&field.dataset.stepRequired==='1'});});
@@ -411,3 +423,6 @@ $('#year').textContent=new Date().getFullYear();
 renderCart();
 initGlobalPlayer();
 loadCatalog();
+
+checkCustomer().catch(()=>{});
+if(new URLSearchParams(location.search).get('auth')==='success'){history.replaceState({},'',location.pathname+location.hash);toast('Вход через Google выполнен');}

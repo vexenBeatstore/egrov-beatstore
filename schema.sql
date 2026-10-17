@@ -51,3 +51,18 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS idx_beats_active ON beats(active);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+
+
+-- Customer accounts for Telegram and Google sign-in. Safe to apply to an existing D1 database.
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider TEXT NOT NULL CHECK (provider IN ('telegram','google')),
+  provider_id TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
+  email TEXT,
+  avatar_url TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_login_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(provider, provider_id)
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

@@ -6,3 +6,8 @@ BANK_DETAILS="УКАЖИТЕ РЕКВИЗИТЫ ДЛЯ ПЕРЕВОДА"
 PAYMENT_RECIPIENT="VEXEN"
 SITE_ORIGIN="http://localhost:8788"
 SESSION_SECRET="REPLACE_WITH_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
+
+# Optional customer Google sign-in (create OAuth client in Google Cloud Console)
+GOOGLE_CLIENT_ID="YOUR_GOOGLE_OAUTH_CLIENT_ID"
+GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_OAUTH_CLIENT_SECRET"
+GOOGLE_REDIRECT_URI="https://YOUR-DOMAIN.example/api/auth/google/callback"
