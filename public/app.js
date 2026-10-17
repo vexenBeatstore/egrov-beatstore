@@ -1,7 +1,7 @@
 
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null };
+const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, user: null, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null };
 const rub = n => new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(Number(n)||0);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, options={}) {
@@ -187,7 +187,8 @@ async function showOrder(){
     showModal('orderModal');
   }catch(e){toast(e.message,true)}
 }
-function openAdmin(){showModal('adminModal');loadTelegramLogin();checkAdmin()}
+function openProfile(){showModal('adminModal');$('#authModalTitle').textContent='Вход / Профиль';$('#adminApp').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');loadTelegramLogin();checkAuth()} 
+function openAdmin(){showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');checkAdmin()}
 async function loadTelegramLogin(){
   try{
     const c=await api('config');
@@ -210,26 +211,41 @@ window.onTelegramAuth=async user=>{
   try{
     await api('auth/telegram',{method:'POST',body:JSON.stringify(user)});
     toast('Вход выполнен');
-    await checkAdmin();
+    await checkAuth();
   }catch(e){toast(e.message,true)}
 };
-async function checkAdmin(){
+async function checkAuth(){
   try{
-    await api('auth/me');
-    state.admin=true;
-    $('#adminOpen').textContent='Админ-панель';
-    $('#adminOpen').setAttribute('aria-label','Открыть админ-панель');
-    $('#adminLogin').classList.add('hidden');
-    $('#adminApp').classList.remove('hidden');
-    loadAdminBeats();
+    const user=await api('auth/me');
+    state.user=user; state.admin=Boolean(user.is_admin);
+    $('#authModalTitle').textContent='Профиль';
+    $('#profileName').textContent=user.name||'Профиль';
+    $('#profileTelegram').textContent=user.is_admin?'Вы вошли как администратор Telegram.':'Вы вошли через Telegram.';
+    $('#profileApp').classList.remove('hidden'); $('#adminLogin').classList.add('hidden'); $('#adminApp').classList.add('hidden');
+    $('#profileOpen').textContent='Профиль';
+    $('#adminPanelOpen').classList.toggle('hidden',!state.admin);
   }catch{
-    state.admin=false;
-    $('#adminOpen').textContent='Вход';
-    $('#adminOpen').setAttribute('aria-label','Войти через Telegram');
-    $('#adminLogin').classList.remove('hidden');
-    $('#adminApp').classList.add('hidden');
+    state.user=null;state.admin=false;
+    $('#profileOpen').textContent='Вход';
+    $('#adminPanelOpen').classList.add('hidden');
+    $('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');
   }
 }
+async function checkAdmin(){
+  try{
+    const user=await api('auth/me');
+    if(!user.is_admin)throw new Error('Нет прав администратора');
+    state.user=user;state.admin=true;
+    $('#authModalTitle').textContent='Админ-панель';
+    $('#adminLogin').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.remove('hidden');
+    $('#profileOpen').textContent='Профиль';$('#adminPanelOpen').classList.remove('hidden');
+    loadAdminBeats();
+  }catch{
+    state.admin=false;$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');
+    toast('Войди через Telegram-аккаунт администратора.',true);
+  }
+}
+
 function switchAdminTab(tab){
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.admin-pane').forEach(p=>p.classList.add('hidden'));
@@ -296,7 +312,8 @@ $('#checkoutOpen').onclick=()=>{
   showModal('checkoutModal');
 };
 $('#checkoutForm').addEventListener('submit',checkout);
-$('#adminOpen').onclick=openAdmin;
+$('#profileOpen').onclick=openProfile;
+$('#adminPanelOpen').onclick=openAdmin;
 $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
@@ -403,19 +420,20 @@ $('#adminLogout').onclick=async()=>{
   logoutButton.disabled = true;
   try {
     await api('auth/logout',{method:'POST',body:'{}'});
-    state.admin = false;
-    $('#adminOpen').textContent = 'Вход';
-    $('#adminOpen').setAttribute('aria-label','Войти через Telegram');
-    $('#adminApp').classList.add('hidden');
+    state.admin = false; state.user = null;
+    $('#profileOpen').textContent = 'Вход';
+    $('#adminPanelOpen').classList.add('hidden');
+    $('#adminApp').classList.add('hidden'); $('#profileApp').classList.add('hidden');
     $('#adminLogin').classList.remove('hidden');
     hideModal('adminModal');
-    toast('Вы вышли из админ-панели');
+    toast('Вы вышли из аккаунта');
   } catch (e) {
     toast(e.message || 'Не удалось выйти из аккаунта', true);
   } finally {
     logoutButton.disabled = false;
   }
 };
+$('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   const x=b.dataset.close;
@@ -423,6 +441,7 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
+checkAuth();
 
 renderCart();
 initGlobalPlayer();

@@ -1,13 +1,12 @@
 
-const json = (data, status = 200, extraHeaders = {}) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      ...extraHeaders,
-    },
-  });
+const json = (data, status = 200, extraHeaders = {}) => {
+  const headers = new Headers({"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"});
+  for (const [key, value] of Object.entries(extraHeaders || {})) {
+    if (key.toLowerCase() === "set-cookie" && Array.isArray(value)) value.forEach(v => headers.append("Set-Cookie", v));
+    else headers.set(key, value);
+  }
+  return new Response(JSON.stringify(data), { status, headers });
+};
 
 const fail = (message, status = 400) => json({ error: message }, status);
 const enc = new TextEncoder();
@@ -78,7 +77,7 @@ async function readSession(request, env) {
   try {
     if (!env.SESSION_SECRET || !env.ADMIN_TELEGRAM_ID) return null;
 
-    const token = cookie(request, "vexen_admin");
+    const token = cookie(request, "vexen_admin") || cookie(request, "vexen_user");
     const [payload, sig] = token.split(".");
     if (!payload || !sig) return null;
 
@@ -100,6 +99,20 @@ async function readSession(request, env) {
   } catch {
     return null;
   }
+}
+
+async function readUserSession(request, env) {
+  try {
+    if (!env.SESSION_SECRET) return null;
+    const token = cookie(request, "vexen_user");
+    const [payload, sig] = token.split(".");
+    if (!payload || !sig) return null;
+    const expected = b64url(await hmac(env.SESSION_SECRET, payload));
+    if (expected !== sig) return null;
+    const obj = JSON.parse(new TextDecoder().decode(unb64url(payload)));
+    if (obj.exp < Date.now() / 1000 || !obj.id) return null;
+    return obj;
+  } catch { return null; }
 }
 
 async function adminRequired(request, env) {
@@ -265,19 +278,13 @@ async function handle(request, env) {
       return fail("Некорректный JSON");
     }
 
-    if (
-      !env.BOT_TOKEN ||
-      !env.ADMIN_TELEGRAM_ID ||
-      !env.SESSION_SECRET
-    ) {
+    if (!env.BOT_TOKEN || !env.SESSION_SECRET) {
       return fail("Секреты авторизации не настроены в Cloudflare.", 500);
     }
 
     const id = String(data.id || "");
-
-    if (id !== String(env.ADMIN_TELEGRAM_ID)) {
-      return fail("Этот Telegram-аккаунт не является администратором.", 403);
-    }
+    if (!/^\d+$/.test(id)) return fail("Некорректный Telegram ID.", 401);
+    const isAdmin = Boolean(env.ADMIN_TELEGRAM_ID) && id === String(env.ADMIN_TELEGRAM_ID);
 
     const authDate = Number(data.auth_date || 0);
 
@@ -334,27 +341,22 @@ async function handle(request, env) {
 
     const token = await makeSession(env, {
       id,
-      first_name: data.first_name,
+      first_name: data.first_name || data.username || "Пользователь",
     });
-
-    return json(
-      { ok: true, name: data.first_name || "Admin" },
-      200,
-      {
-        "Set-Cookie":
-          `vexen_admin=${encodeURIComponent(token)}; HttpOnly; ` +
-          `${url.protocol === "https:" ? "Secure; " : ""}` +
-          "SameSite=Lax; Path=/; Max-Age=604800",
-      }
-    );
+    const secure = url.protocol === "https:" ? "Secure; " : "";
+    const setCookies = [
+      `vexen_user=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=604800`,
+      isAdmin
+        ? `vexen_admin=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=604800`
+        : `vexen_admin=; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=0`
+    ];
+    return json({ ok: true, name: data.first_name || data.username || "Пользователь", is_admin: isAdmin }, 200, { "Set-Cookie": setCookies });
   }
 
   if (path === "auth/me" && method === "GET") {
-    const session = await readSession(request, env);
-
-    return session
-      ? json({ authenticated: true, name: session.name })
-      : json({ authenticated: false }, 401);
+    const session = await readUserSession(request, env);
+    if (!session) return json({ authenticated: false }, 401);
+    return json({ authenticated: true, name: session.name, telegram_id: session.id, is_admin: Boolean(env.ADMIN_TELEGRAM_ID) && session.id === String(env.ADMIN_TELEGRAM_ID) });
   }
 
   if (path === "auth/logout" && method === "POST") {
@@ -362,10 +364,10 @@ async function handle(request, env) {
       { ok: true },
       200,
       {
-        "Set-Cookie":
-          `vexen_admin=; HttpOnly; ` +
-          `${url.protocol === "https:" ? "Secure; " : ""}` +
-          "SameSite=Lax; Path=/; Max-Age=0",
+        "Set-Cookie": [
+          `vexen_user=; HttpOnly; ${url.protocol === "https:" ? "Secure; " : ""}SameSite=Lax; Path=/; Max-Age=0`,
+          `vexen_admin=; HttpOnly; ${url.protocol === "https:" ? "Secure; " : ""}SameSite=Lax; Path=/; Max-Age=0`
+        ],
       }
     );
   }
