@@ -217,11 +217,13 @@ async function checkAdmin(){
   try{
     await api('auth/me');
     state.admin=true;
+    $('#adminOpen').textContent='Админ-панель ↗';
     $('#adminLogin').classList.add('hidden');
     $('#adminApp').classList.remove('hidden');
     loadAdminBeats();
   }catch{
     state.admin=false;
+    $('#adminOpen').textContent='Войти через Telegram ↗';
     $('#adminLogin').classList.remove('hidden');
     $('#adminApp').classList.add('hidden');
   }
@@ -400,6 +402,7 @@ $('#adminLogout').onclick=async()=>{
   try {
     await api('auth/logout',{method:'POST',body:'{}'});
     state.admin = false;
+    $('#adminOpen').textContent = 'Войти через Telegram ↗';
     $('#adminApp').classList.add('hidden');
     $('#adminLogin').classList.remove('hidden');
     hideModal('adminModal');
