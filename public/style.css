@@ -753,3 +753,29 @@ main,footer,.topbar{min-width:0}
   .hero.hero-text-only{grid-template-columns:1fr;column-gap:0;padding-inline:22px}
   .hero-text-only .hero-copy{max-width:100%}
 }
+
+/* Compact monochrome authentication screen; the Telegram action remains the visual accent. */
+#adminModal .admin-card:has(#adminLogin:not(.hidden)):has(#adminApp.hidden):has(#profileApp.hidden){
+  width:min(460px,100%);max-width:460px;max-height:min(90dvh,760px);padding:clamp(26px,5vw,42px);
+  border:1px solid #55555566;border-radius:16px;background:radial-gradient(ellipse at 50% -18%,#242424 0%,#090909 54%,#040404 100%);
+  box-shadow:0 30px 110px #000c,0 0 0 1px #ffffff05;overflow:hidden;position:relative
+}
+#adminModal .admin-card:has(#adminLogin:not(.hidden)):has(#adminApp.hidden):has(#profileApp.hidden)::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,#727272,#A0A0A0,#727272,transparent);opacity:.8}
+#adminModal .auth-eyebrow{margin:0 0 30px;letter-spacing:.19em;font-size:9px;color:#A0A0A0}
+#adminModal .auth-eyebrow span{color:#555555}
+#adminModal .auth-heading{display:flex;align-items:center;gap:15px;margin:0 0 26px}
+#adminModal .auth-mark{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border:1px solid #555555;border-radius:12px;background:linear-gradient(145deg,#242424,#090909);font:700 25px/1 'Space Grotesk',sans-serif;letter-spacing:-.1em;color:#f0f0f0;box-shadow:inset 0 1px #ffffff0a}
+#adminModal .auth-heading h3{margin:0;font:600 34px/1 'Space Grotesk',sans-serif;letter-spacing:-.075em;color:#f1f1f1}
+#adminModal .auth-subtitle{margin:8px 0 0;color:#727272;font-size:12px;letter-spacing:.01em}
+#adminModal #adminLogin{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+#adminModal .auth-divider{display:flex;align-items:center;gap:12px;margin:0 0 15px;color:#727272;font-size:8px;font-weight:700;letter-spacing:.15em;white-space:nowrap}
+#adminModal .auth-divider::before,#adminModal .auth-divider::after{content:"";height:1px;flex:1;background:#242424}
+#adminModal .auth-description{margin:0 0 19px;color:#A0A0A0;font-size:12px;line-height:1.7}
+#adminModal #telegramLogin{display:flex;justify-content:center;align-items:center;min-height:54px;padding:12px;border:1px solid #55555566;border-radius:10px;background:#080808;transition:border-color .2s,background .2s}
+#adminModal #telegramLogin:hover{border-color:#727272;background:#0b0b0b}
+#adminModal #telegramLogin iframe{max-width:100%}
+#adminModal .auth-footnote{margin:17px 0 0;text-align:center;color:#727272;font-size:10px;line-height:1.6}
+#adminModal .auth-setup-note{margin:12px 0 0;padding-top:12px;border-top:1px solid #242424;color:#555555;font-size:9px;line-height:1.65}
+#adminModal .admin-card:has(#adminLogin:not(.hidden)):has(#adminApp.hidden):has(#profileApp.hidden) .modal-close{z-index:2;background:#181818;border:1px solid #333;color:#A0A0A0}
+#adminModal .admin-card:has(#adminLogin:not(.hidden)):has(#adminApp.hidden):has(#profileApp.hidden) .modal-close:hover{background:#242424;color:#fff;border-color:#555}
+@media(max-width:700px){#adminModal .admin-card:has(#adminLogin:not(.hidden)):has(#adminApp.hidden):has(#profileApp.hidden){width:100%;max-width:430px;margin:auto;padding:29px 22px 24px;border-radius:14px}#adminModal .auth-eyebrow{margin-bottom:25px}#adminModal .auth-heading h3{font-size:32px}#adminModal .auth-mark{width:49px;height:49px;flex-basis:49px}}
