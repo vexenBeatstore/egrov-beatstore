@@ -187,7 +187,7 @@ async function showOrder(){
     showModal('orderModal');
   }catch(e){toast(e.message,true)}
 }
-function openProfile(){showModal('adminModal');$('#authModalTitle').textContent='Вход / Профиль';$('#adminApp').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');loadTelegramLogin();checkAuth()} 
+function openProfile(){showModal('adminModal');$('#authModalTitle').textContent=state.user?'Профиль':'Вход';$('#adminApp').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');loadTelegramLogin();checkAuth()} 
 function openAdmin(){showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');checkAdmin()}
 async function loadTelegramLogin(){
   try{
@@ -212,6 +212,8 @@ window.onTelegramAuth=async user=>{
     await api('auth/telegram',{method:'POST',body:JSON.stringify(user)});
     toast('Вход выполнен');
     await checkAuth();
+    hideModal('adminModal');
+    document.getElementById('catalog')?.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(e){toast(e.message,true)}
 };
 async function checkAuth(){
@@ -415,24 +417,6 @@ $('#beatForm').addEventListener('submit', async e => {
   }
 });
 
-$('#adminLogout').onclick=async()=>{
-  const logoutButton = $('#adminLogout');
-  logoutButton.disabled = true;
-  try {
-    await api('auth/logout',{method:'POST',body:'{}'});
-    state.admin = false; state.user = null;
-    $('#profileOpen').textContent = 'Вход';
-    $('#adminPanelOpen').classList.add('hidden');
-    $('#adminApp').classList.add('hidden'); $('#profileApp').classList.add('hidden');
-    $('#adminLogin').classList.remove('hidden');
-    hideModal('adminModal');
-    toast('Вы вышли из аккаунта');
-  } catch (e) {
-    toast(e.message || 'Не удалось выйти из аккаунта', true);
-  } finally {
-    logoutButton.disabled = false;
-  }
-};
 $('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
