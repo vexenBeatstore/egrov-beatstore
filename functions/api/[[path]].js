@@ -372,6 +372,38 @@ async function handle(request, env) {
     );
   }
 
+  /* ---------------- USER FAVORITES ---------------- */
+
+  if (path === "favorites" && method === "GET") {
+    const session = await readUserSession(request, env);
+    if (!session) return fail("Войди через Telegram, чтобы пользоваться избранным на всех устройствах.", 401);
+    const { results = [] } = await env.DB.prepare(
+      `SELECT b.* FROM user_favorites f JOIN beats b ON b.id=f.beat_id
+       WHERE f.telegram_id=? AND b.active=1 ORDER BY f.created_at DESC`
+    ).bind(String(session.id)).all();
+    return json({ beats: results.map((beat) => ({ ...beat, has_mp3: Boolean(beat.mp3_key), has_wav: Boolean(beat.wav_key), has_stems: Boolean(beat.stems_key) })) });
+  }
+
+  if (path === "favorites" && method === "POST") {
+    const session = await readUserSession(request, env);
+    if (!session) return fail("Войди через Telegram, чтобы сохранять избранное.", 401);
+    let data; try { data = await request.json(); } catch { return fail("Некорректный JSON"); }
+    const beatId = Number(data.beat_id);
+    if (!Number.isInteger(beatId) || beatId < 1) return fail("Некорректный бит.");
+    const beat = await env.DB.prepare("SELECT id FROM beats WHERE id=? AND active=1").bind(beatId).first();
+    if (!beat) return fail("Бит не найден.", 404);
+    await env.DB.prepare("INSERT OR IGNORE INTO user_favorites (telegram_id, beat_id) VALUES (?, ?)").bind(String(session.id), beatId).run();
+    return json({ ok: true, beat_id: beatId });
+  }
+
+  const favoriteMatch = path.match(/^favorites\/(\d+)$/);
+  if (favoriteMatch && method === "DELETE") {
+    const session = await readUserSession(request, env);
+    if (!session) return fail("Войди через Telegram, чтобы изменять избранное.", 401);
+    await env.DB.prepare("DELETE FROM user_favorites WHERE telegram_id=? AND beat_id=?").bind(String(session.id), Number(favoriteMatch[1])).run();
+    return json({ ok: true, beat_id: Number(favoriteMatch[1]) });
+  }
+
   /* ---------------- PUBLIC MEDIA ---------------- */
 
   if (path === "media" && method === "GET") {

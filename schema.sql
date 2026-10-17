@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS idx_beats_active ON beats(active);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+
+
+CREATE TABLE IF NOT EXISTS user_favorites (
+  telegram_id TEXT NOT NULL,
+  beat_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (telegram_id, beat_id),
+  FOREIGN KEY (beat_id) REFERENCES beats(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(telegram_id, created_at);

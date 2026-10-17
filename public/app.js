@@ -1,7 +1,7 @@
 
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, user: null, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null };
+const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, user: null, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null, favorites: [], favoriteQueue: [], favoriteQueueIndex: -1 };
 const rub = n => new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(Number(n)||0);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, options={}) {
@@ -80,7 +80,7 @@ function initGlobalPlayer(){
   audio.addEventListener('pause',()=>{$('#globalPlay').textContent='▶';$('#globalPlay').setAttribute('aria-label','Продолжить');document.querySelectorAll('.card-play').forEach(b=>{b.classList.remove('is-playing');b.textContent='▶';b.setAttribute('aria-label','Воспроизвести')});if(audio.src&&audio.currentTime>0)$('#globalPlayerStatus').textContent='' });
   audio.addEventListener('loadedmetadata',()=>{$('#globalDuration').textContent=timeLabel(audio.duration);drawWaveform()});
   audio.addEventListener('timeupdate',()=>{$('#globalCurrent').textContent=timeLabel(audio.currentTime);drawWaveform()});
-  audio.addEventListener('ended',()=>{$('#globalPlayerStatus').textContent='';$('#globalPlay').textContent='▶';document.querySelectorAll('.card-play').forEach(b=>{b.classList.remove('is-playing');b.textContent='▶';b.setAttribute('aria-label','Воспроизвести')});drawWaveform()});
+  audio.addEventListener('ended',()=>{if(state.favoriteQueue.length&&state.favoriteQueueIndex<state.favoriteQueue.length-1){state.favoriteQueueIndex++;selectBeatForPlayer(state.favoriteQueue[state.favoriteQueueIndex],true);return;}state.favoriteQueue=[];state.favoriteQueueIndex=-1;$('#globalPlayerStatus').textContent='';$('#globalPlay').textContent='▶';document.querySelectorAll('.card-play').forEach(b=>{b.classList.remove('is-playing');b.textContent='▶';b.setAttribute('aria-label','Воспроизвести')});drawWaveform()});
   audio.addEventListener('error',()=>{$('#globalPlayerStatus').textContent='';toast('Демо не загрузилось. Проверь файл в админ-панели.',true)});
   canvas.addEventListener('click',e=>{if(audio.duration>0){const r=canvas.getBoundingClientRect();audio.currentTime=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))*audio.duration;drawWaveform()}});
   $('#globalVolume').addEventListener('input',e=>{audio.volume=Number(e.target.value);audio.muted=audio.volume===0});audio.volume=.85;window.addEventListener('resize',drawWaveform);
@@ -103,11 +103,42 @@ function renderCatalog(){
   if(!list.length){grid.innerHTML='';return}
   grid.innerHTML=list.map((b,i)=>{
     const licenses=available(b);
-    return `<article class="beat-row"><div class="track-identity"><span class="track-number">${String(i+1).padStart(2,'0')}</span><div class="track-copy"><h3 class="beat-title">${esc(b.title)}</h3><div class="track-mobile-meta">${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM</div>${b.description&&String(b.description).trim()?`<p class="track-description">${esc(b.description)}</p>`:''}</div></div><div class="track-details"><span>${esc(b.genre||'—')}</span><b>${esc(b.bpm||'—')} BPM</b><span>${esc(b.musical_key||'—')}</span></div><div class="track-license"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}" ${licenses.length?'':'disabled'}>${licenses.map(k=>`<option value="${k}">${({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'})[k]} · ${rub(finalPrice(b,k))}</option>`).join('')}</select></div><div class="track-actions">${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Воспроизвести ${esc(b.title)}" title="Воспроизвести">▶</button>`:`<span class="no-demo">НЕТ ДЕМО</span>`}<button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ <span>В КОРЗИНУ</span></button></div></article>`
+    return `<article class="beat-row"><div class="track-identity"><span class="track-number">${String(i+1).padStart(2,'0')}</span><div class="track-copy"><h3 class="beat-title">${esc(b.title)}</h3><div class="track-mobile-meta">${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM</div>${b.description&&String(b.description).trim()?`<p class="track-description">${esc(b.description)}</p>`:''}</div></div><div class="track-details"><span>${esc(b.genre||'—')}</span><b>${esc(b.bpm||'—')} BPM</b><span>${esc(b.musical_key||'—')}</span></div><div class="track-license"><select class="license-select" aria-label="Лицензия для ${esc(b.title)}" data-beat="${b.id}" ${licenses.length?'':'disabled'}>${licenses.map(k=>`<option value="${k}">${({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'})[k]} · ${rub(finalPrice(b,k))}</option>`).join('')}</select></div><div class="track-actions"><button class="favorite-btn ${state.favorites.includes(Number(b.id))?'is-favorite':''}" type="button" data-favorite="${b.id}" aria-label="Добавить в избранное" title="Избранное">${state.favorites.includes(Number(b.id))?'♥':'♡'}</button>${b.demo_key?`<button class="card-play" type="button" data-play-beat="${b.id}" aria-label="Воспроизвести ${esc(b.title)}" title="Воспроизвести">▶</button>`:`<span class="no-demo">НЕТ ДЕМО</span>`}<button class="add-btn" data-add="${b.id}" ${licenses.length?'':'disabled'}>＋ <span>В КОРЗИНУ</span></button></div></article>`
   }).join('');
   $$('[data-play-beat]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.playBeat));selectBeatForPlayer(b,true)}));
   $$('[data-add]',grid).forEach(btn=>btn.addEventListener('click',()=>{const b=state.beats.find(x=>x.id===Number(btn.dataset.add));const select=$(`.license-select[data-beat="${b.id}"]`,grid);addToCart(b,select.value);}));
+  $$('[data-favorite]',grid).forEach(btn=>btn.addEventListener('click',()=>toggleFavorite(Number(btn.dataset.favorite))));
 }
+async function loadFavorites(silent=false){
+  if(!state.user){state.favorites=[];updateFavoriteCount();return;}
+  try{const data=await api('favorites');state.favorites=(data.beats||[]).map(b=>Number(b.id));renderCatalog();renderFavorites(data.beats||[]);updateFavoriteCount();}
+  catch(e){if(!silent&&e.message)toast(e.message,true)}
+}
+function updateFavoriteCount(){const el=$('#favoritesCount');if(el)el.textContent=String(state.favorites.length)}
+async function toggleFavorite(id){
+  if(!state.user){toast('Сначала войди через Telegram, чтобы сохранять избранное.',true);openProfile();return;}
+  const isSaved=state.favorites.includes(id);
+  try{
+    if(isSaved)await api(`favorites/${id}`,{method:'DELETE'});
+    else await api('favorites',{method:'POST',body:JSON.stringify({beat_id:id})});
+    await loadFavorites(true);toast(isSaved?'Бит удалён из избранного':'Бит добавлен в избранное');
+  }catch(e){toast(e.message||'Не удалось обновить избранное',true)}
+}
+function renderFavorites(beats){
+  const list=$('#favoritesList');if(!list)return;
+  $('#favoritesSummary').textContent=`${beats.length} ${beats.length===1?'бит':beats.length>1&&beats.length<5?'бита':'битов'}`;
+  if(!beats.length){list.innerHTML='<div class="empty">Коллекция пока пуста. Нажми ♡ у понравившегося бита в каталоге.</div>';return;}
+  list.innerHTML=beats.map((b,i)=>`<div class="favorite-item"><span class="favorite-index">${String(i+1).padStart(2,'0')}</span><div class="favorite-copy"><strong>${esc(b.title)}</strong><small>${esc(b.genre||'Beat')} · ${esc(b.bpm)} BPM · ${esc(b.musical_key||'—')}</small></div><button class="card-play" type="button" data-favorite-play="${b.id}" ${b.demo_key?'':'disabled'} aria-label="Слушать ${esc(b.title)}">▶</button><button class="favorite-btn is-favorite" type="button" data-favorite-remove="${b.id}" aria-label="Убрать из избранного">♥</button></div>`).join('');
+  $$('[data-favorite-play]',list).forEach(btn=>btn.addEventListener('click',()=>{const b=beats.find(x=>Number(x.id)===Number(btn.dataset.favoritePlay));selectBeatForPlayer(b,true)}));
+  $$('[data-favorite-remove]',list).forEach(btn=>btn.addEventListener('click',()=>toggleFavorite(Number(btn.dataset.favoriteRemove))));
+}
+function playFavoritesQueue(){
+  if(!state.user){toast('Войди через Telegram, чтобы открыть свою коллекцию.',true);openProfile();return;}
+  const queue=state.beats.filter(b=>state.favorites.includes(Number(b.id))&&b.demo_key);
+  if(!queue.length){toast('В избранном пока нет битов с демо.',true);return;}
+  state.favoriteQueue=queue;state.favoriteQueueIndex=0;selectBeatForPlayer(queue[0],true);toast(`Запущена подборка: ${queue.length} битов`);
+}
+
 async function loadCatalog(){
   try{
     const data=await api('catalog');
@@ -226,6 +257,7 @@ async function checkAuth(){
     $('#profileApp').classList.remove('hidden'); $('#adminLogin').classList.add('hidden'); $('#adminApp').classList.add('hidden');
     $('#profileOpen').textContent='Профиль';
     $('#adminPanelOpen').classList.toggle('hidden',!state.admin);
+    await loadFavorites(true);
   }catch{
     state.user=null;state.admin=false;
     $('#profileOpen').textContent='Вход';
@@ -307,6 +339,8 @@ async function editBeat(b){
 $('#search').addEventListener('input',renderCatalog);$('#sortOrder')?.addEventListener('change',renderCatalog);
 $('#genreFilter').addEventListener('change',renderCatalog);
 $('#cartOpen').onclick=()=>$('#cartDrawer').classList.remove('hidden');
+$('#favoritesOpen').onclick=async()=>{if(!state.user){toast('Войди через Telegram, чтобы пользоваться избранным.',true);openProfile();return;}await loadFavorites();showModal('favoritesModal');};
+$('#playFavorites').onclick=playFavoritesQueue;
 $('#checkoutOpen').onclick=()=>{
   if(!cartResolved().length)return;
   $('#checkoutResult').classList.add('hidden');
@@ -417,11 +451,12 @@ $('#beatForm').addEventListener('submit', async e => {
   }
 });
 
-$('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
+$('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;state.favorites=[];updateFavoriteCount();$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   const x=b.dataset.close;
   if(x==='cart')hideModal('cartDrawer');
+  else if(x==='favorites')hideModal('favoritesModal');
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
