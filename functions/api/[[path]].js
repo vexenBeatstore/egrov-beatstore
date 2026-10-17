@@ -429,6 +429,17 @@ async function handle(request, env) {
     return new Response(obj.body, { headers });
   }
 
+  /* ---------------- PUBLIC PLAYLISTS ---------------- */
+  if (path === "playlists" && method === "GET") {
+    const { results = [] } = await env.DB.prepare("SELECT id,title,genre,cover_key,description,created_at FROM playlists WHERE active=1 ORDER BY id DESC").all();
+    const playlists = [];
+    for (const playlist of results) {
+      const { results: beatRows = [] } = await env.DB.prepare(`SELECT b.id,b.title,b.artist,b.genre,b.bpm,b.musical_key,b.description,b.cover_key,b.demo_key,b.mp3_price,b.wav_price,b.stems_price FROM playlist_beats pb JOIN beats b ON b.id=pb.beat_id WHERE pb.playlist_id=? AND b.active=1 ORDER BY pb.position ASC, b.id DESC`).bind(playlist.id).all();
+      playlists.push({...playlist, beats: beatRows});
+    }
+    return json({playlists});
+  }
+
   /* ---------------- CATALOG ---------------- */
 
   if (path === "catalog" && method === "GET") {
@@ -666,6 +677,37 @@ async function handle(request, env) {
 
   if (path.startsWith("admin/") && !session) {
     return fail("Требуется вход администратора через Telegram.", 401);
+  }
+
+  if (path === "admin/playlists" && method === "GET") {
+    const { results = [] } = await env.DB.prepare("SELECT * FROM playlists ORDER BY id DESC").all();
+    const playlists=[];
+    for (const playlist of results) {
+      const {results: rows=[]}=await env.DB.prepare("SELECT beat_id FROM playlist_beats WHERE playlist_id=? ORDER BY position ASC").bind(playlist.id).all();
+      playlists.push({...playlist, beat_ids: rows.map(r=>r.beat_id)});
+    }
+    return json({playlists});
+  }
+  if (path === "admin/playlists" && method === "POST") {
+    let data; try { data=await request.json(); } catch { return fail("Некорректные данные плейлиста."); }
+    const title=String(data.title||"").trim(), genre=String(data.genre||"").trim(), description=String(data.description||"").trim(), cover_key=String(data.cover_key||"").trim();
+    const beatIds=[...new Set((Array.isArray(data.beat_ids)?data.beat_ids:[]).map(Number).filter(Number.isInteger))];
+    if(!title) return fail("Укажи название плейлиста.");
+    if(!beatIds.length) return fail("Выбери хотя бы один бит из каталога.");
+    const placeholders=beatIds.map(()=>"?").join(",");
+    const {results: valid=[]}=await env.DB.prepare(`SELECT id FROM beats WHERE active=1 AND id IN (${placeholders})`).bind(...beatIds).all();
+    if(valid.length!==beatIds.length) return fail("Некоторые выбранные биты недоступны.");
+    const ins=await env.DB.prepare("INSERT INTO playlists (title,genre,cover_key,description,active) VALUES (?,?,?,?,1)").bind(title,genre,cover_key,description).run();
+    const id=ins.meta?.last_row_id;
+    if(!id) return fail("Не удалось создать плейлист.",500);
+    for(let i=0;i<beatIds.length;i++) await env.DB.prepare("INSERT INTO playlist_beats (playlist_id,beat_id,position) VALUES (?,?,?)").bind(id,beatIds[i],i).run();
+    return json({ok:true,id});
+  }
+  const playlistDelete=path.match(/^admin\/playlists\/(\d+)$/);
+  if(playlistDelete && method==="DELETE") {
+    const id=Number(playlistDelete[1]);
+    await env.DB.prepare("DELETE FROM playlists WHERE id=?").bind(id).run();
+    return json({ok:true});
   }
 
   if (path === "admin/beats" && method === "GET") {

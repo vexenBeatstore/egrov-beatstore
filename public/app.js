@@ -274,10 +274,52 @@ async function checkAdmin(){
     $('#adminLogin').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.remove('hidden');
     $('#profileOpen').textContent='Профиль';$('#adminPanelOpen').classList.remove('hidden');
     loadAdminBeats();
+    loadAdminPlaylists();
   }catch{
     state.admin=false;$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');
     toast('Войди через Telegram-аккаунт администратора.',true);
   }
+}
+
+
+let playlistData = [];
+function renderPlaylists(){
+  const search=($('#playlistSearch')?.value||'').trim().toLowerCase(), genre=$('#playlistGenre')?.value||'', sort=$('#playlistSort')?.value||'newest';
+  let items=playlistData.filter(p=>(!search||`${p.title} ${p.genre} ${p.description}`.toLowerCase().includes(search))&&(!genre||p.genre===genre));
+  if(sort==='title')items.sort((a,b)=>a.title.localeCompare(b.title,'ru'));else items.sort((a,b)=>Number(b.id)-Number(a.id));
+  $('#playlistCount').textContent=`${items.length} ${items.length===1?'ПЛЕЙЛИСТ':items.length>1&&items.length<5?'ПЛЕЙЛИСТА':'ПЛЕЙЛИСТОВ'}`;
+  $('#playlistGrid').innerHTML=items.map(p=>`<article class="playlist-card"><button type="button" class="playlist-cover" data-open-playlist="${p.id}" ${p.cover_key?`style="background-image:url('${media(p.cover_key)}')"`:''}><span class="playlist-cover-mark">EGROV<br><b>SELECTED</b></span><span class="playlist-cover-play">▶</span></button><div class="playlist-card-copy"><div><h3>${esc(p.title)}</h3><span class="playlist-genre">${esc(p.genre||'Разные жанры')}</span></div><span class="playlist-track-count">${p.beats.length} бит${p.beats.length===1?'':p.beats.length<5?'а':'ов'}</span></div><button class="playlist-listen" data-play-playlist="${p.id}" type="button">▶ СЛУШАТЬ ПЛЕЙЛИСТ</button></article>`).join('');
+  $('#playlistEmpty').classList.toggle('hidden',items.length>0);
+  $$('[data-open-playlist]').forEach(b=>b.onclick=()=>openPlaylist(Number(b.dataset.openPlaylist)));
+  $$('[data-play-playlist]').forEach(b=>b.onclick=()=>playPlaylist(Number(b.dataset.playPlaylist)));
+}
+function openPlaylist(id){
+  const p=playlistData.find(x=>Number(x.id)===id);if(!p)return;
+  const list=p.beats.map((b,i)=>`<div class="favorite-item"><span class="favorite-index">${String(i+1).padStart(2,'0')}</span><div class="favorite-copy"><strong>${esc(b.title)}</strong><small>${esc(b.genre||'Beat')} · ${b.bpm||'—'} BPM · ${esc(b.musical_key||'—')}</small></div><button class="card-play" type="button" data-playlist-beat="${b.id}" ${b.demo_key?'':'disabled'}>▶</button></div>`).join('');
+  const modal=$('#playlistModal');modal.innerHTML=`<div class="modal-backdrop" data-close-playlist="1"></div><div class="modal-card favorites-card playlist-detail"><button class="icon-btn modal-close" data-close-playlist="1">✕</button><p class="eyebrow">EGROV / PLAYLIST</p><h3>${esc(p.title)}</h3><p class="hint">${esc(p.genre||'Разные жанры')} · ${p.beats.length} битов</p>${p.description?`<p class="playlist-description">${esc(p.description)}</p>`:''}<button class="primary-btn full" id="playlistDetailPlay" type="button">▶ СЛУШАТЬ ВСЁ</button><div class="favorites-list">${list||'<p class="hint">В плейлисте пока нет доступных битов.</p>'}</div></div>`;
+  modal.classList.remove('hidden');modal.querySelectorAll('[data-close-playlist]').forEach(b=>b.onclick=()=>modal.classList.add('hidden'));
+  $('#playlistDetailPlay').onclick=()=>playPlaylist(id);
+  modal.querySelectorAll('[data-playlist-beat]').forEach(b=>b.onclick=()=>{const beat=p.beats.find(x=>Number(x.id)===Number(b.dataset.playlistBeat));if(beat)selectBeatForPlayer(beat,true)});
+}
+function playPlaylist(id){const p=playlistData.find(x=>Number(x.id)===id);if(!p)return;const queue=p.beats.filter(b=>b.demo_key);if(!queue.length){toast('В этом плейлисте пока нет демо для прослушивания.',true);return;}state.favoriteQueue=queue;state.favoriteQueueIndex=0;selectBeatForPlayer(queue[0],true);toast(`Запущен плейлист «${p.title}» · ${queue.length} битов`)}
+async function loadPlaylists(){
+  try{const d=await api('playlists');playlistData=d.playlists||[];const genres=[...new Set(playlistData.map(p=>p.genre).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));$('#playlistGenre').innerHTML='<option value="">Все жанры</option>'+genres.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');renderPlaylists();}
+  catch(e){$('#playlistGrid').innerHTML=`<div class="empty">Не удалось загрузить плейлисты: ${esc(e.message)}. Возможно, нужно применить миграцию базы.</div>`;}
+}
+async function loadAdminPlaylists(){
+  try{const [d,beats]=await Promise.all([api('admin/playlists'),api('admin/beats')]);
+    $('#plBeats').innerHTML=beats.beats.filter(b=>b.active).map(b=>`<option value="${b.id}">${esc(b.title)} · ${esc(b.genre||'Без жанра')} · #${b.id}</option>`).join('');
+    $('#adminPlaylistList').innerHTML=d.playlists.length?d.playlists.map(p=>`<article class="admin-playlist"><div><strong>${esc(p.title)}</strong><small>${esc(p.genre||'Без жанра')} · ${p.beat_ids.length} битов · ${p.active?'Опубликован':'Скрыт'}</small></div><button class="small-btn danger" data-delete-playlist="${p.id}">Удалить</button></article>`).join(''):'<p class="hint">Плейлистов пока нет. Создай первый слева.</p>';
+    $$('[data-delete-playlist]').forEach(b=>b.onclick=async()=>{if(!confirm('Удалить этот плейлист?'))return;try{await api(`admin/playlists/${b.dataset.deletePlaylist}`,{method:'DELETE'});toast('Плейлист удалён');loadAdminPlaylists();loadPlaylists()}catch(e){toast(e.message,true)}});
+  }catch(e){$('#adminPlaylistList').innerHTML=`<p class="hint">${esc(e.message)}</p>`;}
+}
+async function createPlaylist(event){
+  event.preventDefault();const status=$('#playlistFormStatus'),btn=$('#playlistForm').querySelector('[type="submit"]');btn.disabled=true;status.textContent='Создаём плейлист…';
+  try{let cover_key='';const file=$('#plCover').files[0];if(file){const body=new FormData();body.append('file',file);body.append('type','cover');const uploaded=await api('admin/upload',{method:'POST',body});cover_key=uploaded.key;}
+    const beat_ids=[$$('#plBeats option:checked')].flat().map(o=>Number(o.value));
+    await api('admin/playlists',{method:'POST',body:JSON.stringify({title:$('#plTitle').value,genre:$('#plGenre').value,description:$('#plDescription').value,cover_key,beat_ids})});
+    $('#playlistForm').reset();status.textContent='';toast('Плейлист создан');await loadAdminPlaylists();await loadPlaylists();
+  }catch(e){status.textContent=e.message;toast(e.message,true)}finally{btn.disabled=false;}
 }
 
 function switchAdminTab(tab){
@@ -286,6 +328,7 @@ function switchAdminTab(tab){
   $('#admin'+tab[0].toUpperCase()+tab.slice(1)).classList.remove('hidden');
   if(tab==='orders')loadAdminOrders();
   if(tab==='manage')loadAdminBeats();
+  if(tab==='playlists')loadAdminPlaylists();
 }
 async function loadAdminOrders(){
   try{
@@ -453,6 +496,8 @@ $('#beatForm').addEventListener('submit', async e => {
 
 $('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;state.favorites=[];updateFavoriteCount();$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
+$('#playlistForm')?.addEventListener('submit',createPlaylist);
+['playlistSearch','playlistGenre','playlistSort'].forEach(id=>$('#'+id)?.addEventListener(id==='playlistSearch'?'input':'change',renderPlaylists));
 $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   const x=b.dataset.close;
   if(x==='cart')hideModal('cartDrawer');
@@ -460,6 +505,7 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
+loadPlaylists();
 checkAuth();
 
 renderCart();

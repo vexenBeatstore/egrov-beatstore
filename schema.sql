@@ -61,3 +61,24 @@ CREATE TABLE IF NOT EXISTS user_favorites (
   FOREIGN KEY (beat_id) REFERENCES beats(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(telegram_id, created_at);
+
+
+CREATE TABLE IF NOT EXISTS playlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  genre TEXT NOT NULL DEFAULT '',
+  cover_key TEXT,
+  description TEXT NOT NULL DEFAULT '',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS playlist_beats (
+  playlist_id INTEGER NOT NULL,
+  beat_id INTEGER NOT NULL,
+  position INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (playlist_id, beat_id),
+  FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
+  FOREIGN KEY (beat_id) REFERENCES beats(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_playlists_active ON playlists(active, created_at);
+CREATE INDEX IF NOT EXISTS idx_playlist_beats_order ON playlist_beats(playlist_id, position);
