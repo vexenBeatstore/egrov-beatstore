@@ -307,29 +307,6 @@ async function handle(request, env) {
     return user ? json({authenticated:true, id:user.id, name:user.display_name, email:user.email, provider:user.provider, avatar_url:user.avatar_url}) : fail("Не выполнен вход.", 401);
   }
   if (path === "auth/customer/logout" && method === "POST") return json({ok:true}, 200, {"Set-Cookie":customerCookie(request, "", 0)});
-  if (path === "auth/google/start" && method === "GET") {
-    if (!env.GOOGLE_CLIENT_ID || !env.SESSION_SECRET) return new Response("Google OAuth не настроен. Добавь GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET и GOOGLE_REDIRECT_URI в Cloudflare Pages → Settings → Variables and Secrets.", {status:503, headers:{"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store"}});
-    const state = randomToken();
-    const redirectUri = env.GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`;
-    const target = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    target.searchParams.set("client_id", env.GOOGLE_CLIENT_ID); target.searchParams.set("redirect_uri", redirectUri); target.searchParams.set("response_type", "code"); target.searchParams.set("scope", "openid email profile"); target.searchParams.set("state", state); target.searchParams.set("prompt", "select_account");
-    const secure = url.protocol === "https:" ? "Secure; " : "";
-    return new Response(null,{status:302,headers:{Location:target.toString(),"Cache-Control":"no-store","Set-Cookie":`egrov_google_state=${encodeURIComponent(state)}; HttpOnly; ${secure}SameSite=Lax; Path=/api/auth/google; Max-Age=600`}});
-  }
-  if (path === "auth/google/callback" && method === "GET") {
-    const state = url.searchParams.get("state") || ""; const savedState = cookie(request,"egrov_google_state"); const code = url.searchParams.get("code") || "";
-    const clearState = `egrov_google_state=; HttpOnly; ${url.protocol === "https:" ? "Secure; " : ""}SameSite=Lax; Path=/api/auth/google; Max-Age=0`;
-    if (!state || !savedState || state !== savedState || !code) return new Response("Проверка OAuth state не пройдена. Вернись на сайт и повтори вход.",{status:400,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState,"Cache-Control":"no-store"}});
-    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.SESSION_SECRET) return new Response("Google OAuth не настроен в Cloudflare.",{status:503,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
-    const redirectUri = env.GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`;
-    const tokenResponse = await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({code,client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,redirect_uri:redirectUri,grant_type:"authorization_code"})});
-    const tokens = await tokenResponse.json(); if (!tokenResponse.ok || !tokens.access_token) return new Response("Google не подтвердил вход. Попробуй ещё раз.",{status:401,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
-    const profileResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo",{headers:{Authorization:`Bearer ${tokens.access_token}`}}); const profile = await profileResponse.json();
-    if (!profileResponse.ok || !profile.sub || profile.email_verified !== true) return new Response("Не удалось подтвердить Google-аккаунт.",{status:401,headers:{"Content-Type":"text/plain; charset=utf-8","Set-Cookie":clearState}});
-    const user = await saveCustomer(env,"google",profile.sub,profile.name || profile.email,profile.email,profile.picture || null); const session = await makeCustomerSession(env,user);
-    const headers = new Headers({Location:`${url.origin}/?auth=success`,"Cache-Control":"no-store"}); headers.append("Set-Cookie", clearState); headers.append("Set-Cookie", customerCookie(request,session));
-    return new Response(null,{status:302,headers});
-  }
 
   /* ---------------- TELEGRAM ADMIN AUTH ---------------- */
 

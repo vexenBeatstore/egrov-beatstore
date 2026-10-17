@@ -307,7 +307,7 @@ async function loadCustomerTelegram(){
   catch(e){$('#accountMessage').textContent='Не удалось загрузить Telegram-вход: '+e.message;}
 }
 window.onCustomerTelegramAuth=async user=>{try{await api('auth/customer/telegram',{method:'POST',body:JSON.stringify(user)});await checkCustomer();toast('Вход через Telegram выполнен');}catch(e){$('#accountMessage').textContent=e.message;toast(e.message,true)}};
-async function checkCustomer(){try{const u=await api('auth/customer/me');$('#accountTitle').textContent='Твой аккаунт';$('#accountStatus').classList.remove('hidden');$('#accountStatus').innerHTML='<strong>'+esc(u.name||'Пользователь')+'</strong><span>'+esc(u.provider==='google'?'Google':'Telegram')+' · вход выполнен</span>';$('#customerTelegramLogin').classList.add('hidden');$('#googleLogin').classList.add('hidden');$('#accountLogout').classList.remove('hidden');$('#accountOpen').textContent='Аккаунт';$('#accountMessage').textContent='';}catch{$('#accountTitle').textContent='Вход / регистрация';$('#accountStatus').classList.add('hidden');$('#customerTelegramLogin').classList.remove('hidden');$('#googleLogin').classList.remove('hidden');$('#accountLogout').classList.add('hidden');$('#accountOpen').textContent='Войти';}}
+async function checkCustomer(){try{const u=await api('auth/customer/me');$('#accountTitle').textContent='Твой аккаунт';$('#accountStatus').classList.remove('hidden');$('#accountStatus').innerHTML='<strong>'+esc(u.name||'Пользователь')+'</strong><span>'+esc('Telegram')+' · вход выполнен</span>';$('#customerTelegramLogin').classList.add('hidden');$('#accountLogout').classList.remove('hidden');$('#accountOpen').textContent='Аккаунт';$('#accountMessage').textContent='';}catch{$('#accountTitle').textContent='Вход / регистрация';$('#accountStatus').classList.add('hidden');$('#customerTelegramLogin').classList.remove('hidden');$('#accountLogout').classList.add('hidden');$('#accountOpen').textContent='Войти';}}
 async function logoutCustomer(){try{await api('auth/customer/logout',{method:'POST'});toast('Вы вышли из аккаунта');await checkCustomer();}catch(e){toast(e.message,true)}}
 function setUploadStep(step){
   const current=Math.min(3,Math.max(1,Number(step)||1));
@@ -425,4 +425,4 @@ initGlobalPlayer();
 loadCatalog();
 
 checkCustomer().catch(()=>{});
-if(new URLSearchParams(location.search).get('auth')==='success'){history.replaceState({},'',location.pathname+location.hash);toast('Вход через Google выполнен');}
+
