@@ -217,11 +217,13 @@ async function checkAdmin(){
   try{
     await api('auth/me');
     state.admin=true;
+    $('#adminOpen').classList.remove('hidden');
     $('#adminLogin').classList.add('hidden');
     $('#adminApp').classList.remove('hidden');
     loadAdminBeats();
   }catch{
     state.admin=false;
+    $('#adminOpen').classList.add('hidden');
     $('#adminLogin').classList.remove('hidden');
     $('#adminApp').classList.add('hidden');
   }
@@ -306,7 +308,7 @@ async function loadCustomerTelegram(){
   try{const c=await api('config');const script=document.createElement('script');script.src='https://telegram.org/js/telegram-widget.js?22';script.async=true;script.setAttribute('data-telegram-login',c.bot_username||state.botUsername);script.setAttribute('data-size','large');script.setAttribute('data-userpic','false');script.setAttribute('data-onauth','onCustomerTelegramAuth(user)');script.setAttribute('data-request-access','write');target.appendChild(script);target.dataset.loaded='1';}
   catch(e){$('#accountMessage').textContent='Не удалось загрузить Telegram-вход: '+e.message;}
 }
-window.onCustomerTelegramAuth=async user=>{try{await api('auth/customer/telegram',{method:'POST',body:JSON.stringify(user)});await checkCustomer();toast('Вход через Telegram выполнен');}catch(e){$('#accountMessage').textContent=e.message;toast(e.message,true)}};
+window.onCustomerTelegramAuth=async user=>{try{await api('auth/customer/telegram',{method:'POST',body:JSON.stringify(user)});await checkCustomer();try{await api('auth/telegram',{method:'POST',body:JSON.stringify(user)});}catch{}await checkAdmin();toast('Вход через Telegram выполнен');}catch(e){$('#accountMessage').textContent=e.message;toast(e.message,true)}};
 async function checkCustomer(){try{const u=await api('auth/customer/me');$('#accountTitle').textContent='Твой аккаунт';$('#accountStatus').classList.remove('hidden');$('#accountStatus').innerHTML='<strong>'+esc(u.name||'Пользователь')+'</strong><span>'+esc('Telegram')+' · вход выполнен</span>';$('#customerTelegramLogin').classList.add('hidden');$('#accountLogout').classList.remove('hidden');$('#accountOpen').textContent='Аккаунт';$('#accountMessage').textContent='';}catch{$('#accountTitle').textContent='Вход / регистрация';$('#accountStatus').classList.add('hidden');$('#customerTelegramLogin').classList.remove('hidden');$('#accountLogout').classList.add('hidden');$('#accountOpen').textContent='Войти';}}
 async function logoutCustomer(){try{await api('auth/customer/logout',{method:'POST'});toast('Вы вышли из аккаунта');await checkCustomer();}catch(e){toast(e.message,true)}}
 function setUploadStep(step){
@@ -409,6 +411,7 @@ $('#beatForm').addEventListener('submit', async e => {
 $('#adminLogout').onclick=async()=>{
   await api('auth/logout',{method:'POST',body:'{}'});
   state.admin=false;
+  $('#adminOpen').classList.add('hidden');
   checkAdmin();
   toast('Вы вышли из админ-панели');
 };
@@ -425,4 +428,5 @@ initGlobalPlayer();
 loadCatalog();
 
 checkCustomer().catch(()=>{});
+checkAdmin().catch(()=>{});
 
