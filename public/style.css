@@ -793,3 +793,27 @@ main,footer,.topbar{min-width:0}
 
 .content-section{padding:76px 8%;border-top:1px solid #242424}.section-heading h2{font:700 clamp(28px,4vw,46px) 'Space Grotesk',sans-serif;letter-spacing:-1.5px;margin:8px 0 20px}.section-heading h2 em{font-style:normal;color:#a0a0a0}.content-description{max-width:850px;color:#a0a0a0;line-height:1.9;white-space:pre-wrap}.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:28px}.service-card{padding:24px;border:1px solid #242424;border-radius:12px;background:#101010}.service-card h3{margin:0 0 12px;font-size:18px}.service-card p{margin:0;color:#a0a0a0;line-height:1.7;white-space:pre-wrap}.admin-service-item{border:1px solid #333;border-radius:10px;padding:18px;margin:12px 0}.admin-service-item label{display:block;margin:10px 0}.admin-service-item input,.admin-service-item textarea{display:block;width:100%;margin-top:6px;background:#101010;color:#fff;border:1px solid #333;padding:12px;border-radius:8px}.admin-service-actions{display:flex;gap:10px;margin-top:12px}.danger-btn{background:#241212;color:#ff7777;border:1px solid #633;padding:10px 14px;border-radius:8px}.admin-page .modal{position:relative;inset:auto;display:block!important;background:transparent;padding:24px 5%;z-index:1}.admin-page .modal.hidden{display:block!important}.admin-page .modal-backdrop{display:none}.admin-page .admin-card{width:min(1100px,100%);max-height:none;overflow:visible;margin:0 auto}.admin-page .topbar nav a,.admin-page #favoritesOpen,.admin-page #myOrderOpen,.admin-page #cartOpen{display:none}
 @media(max-width:760px){.content-section{padding:48px 6%}.admin-page .modal{padding:12px 3%}}
+
+/* Dedicated full-page administration workspace */
+.admin-page { background:#080808; min-height:100vh; }
+.admin-page .admin-topbar { position:sticky; top:0; z-index:80; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:14px clamp(18px,4vw,64px); background:rgba(8,8,8,.96); border-bottom:1px solid #292929; }
+.admin-page .admin-topbar-title { display:flex; flex-direction:column; gap:3px; margin-right:auto; margin-left:24px; }
+.admin-page .admin-topbar-title strong { letter-spacing:.12em; font-size:13px; }
+.admin-page main, .admin-page footer, .admin-page #globalPlayer, .admin-page #cartDrawer, .admin-page #checkoutModal, .admin-page #orderModal, .admin-page #favoritesModal, .admin-page #playlistModal { display:none !important; }
+.admin-page #adminModal { position:static; display:block; padding:clamp(16px,3vw,42px); background:transparent; z-index:auto; overflow:visible; }
+.admin-page #adminModal.hidden { display:none !important; }
+.admin-page #adminModal .modal-backdrop, .admin-page #adminModal > .modal-card > .modal-close { display:none !important; }
+.admin-page #adminModal .modal-card.admin-card { position:static; transform:none; width:min(1440px,100%); max-width:none; max-height:none; overflow:visible; margin:0 auto; padding:clamp(18px,3vw,40px); border:1px solid #292929; background:#101010; box-shadow:none; }
+.admin-page #authModalTitle, .admin-page .auth-heading, .admin-page .auth-eyebrow { display:none !important; }
+.admin-page #adminApp { display:block; }
+.admin-page .admin-tabs { position:sticky; top:78px; z-index:20; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin:0 0 26px; padding:12px 0; background:#101010; border-bottom:1px solid #2a2a2a; }
+.admin-page .admin-tabs .tab { min-height:48px; padding:12px 10px; border:1px solid #303030; border-radius:7px; background:#171717; color:#aaa; font:inherit; font-size:12px; font-weight:700; letter-spacing:.04em; cursor:pointer; }
+.admin-page .admin-tabs .tab.active { background:#e7e7e7; color:#111; border-color:#e7e7e7; }
+.admin-page .admin-pane { min-width:0; }
+.admin-page .admin-form, .admin-page .admin-service-item { border-color:#303030; }
+.admin-page .admin-form h4, .admin-page .admin-pane h4 { margin-top:0; }
+.admin-page .admin-service-item { margin-bottom:12px; }
+.admin-page .admin-actions { flex-wrap:wrap; }
+.admin-page .hidden { display:none !important; }
+@media(max-width:850px){.admin-page .admin-tabs{grid-template-columns:repeat(3,minmax(0,1fr));top:68px}.admin-page #adminModal{padding:12px}.admin-page #adminModal .modal-card.admin-card{padding:16px}.admin-page .admin-topbar-title{margin-left:8px}}
+@media(max-width:520px){.admin-page .admin-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page .admin-topbar .small-btn{font-size:11px;padding:9px}.admin-page .brand-logo{max-width:95px}}

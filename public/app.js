@@ -243,8 +243,8 @@ window.onTelegramAuth=async user=>{
     await api('auth/telegram',{method:'POST',body:JSON.stringify(user)});
     toast('Вход выполнен');
     await checkAuth();
-    hideModal('adminModal');
-    if(!document.body.classList.contains('admin-page')) window.scrollTo({top:0,behavior:'smooth'});
+    if(document.body.classList.contains('admin-page')) { await checkAdmin(); }
+    else { hideModal('adminModal'); window.scrollTo({top:0,behavior:'smooth'}); }
   }catch(e){toast(e.message,true)}
 };
 async function checkAuth(){
@@ -283,6 +283,7 @@ async function checkAdmin(){
 
 
 let playlistData = [];
+let editingPlaylistId = null;
 function renderPlaylists(){
   const search=($('#playlistSearch')?.value||'').trim().toLowerCase(), genre=$('#playlistGenre')?.value||'', sort=$('#playlistSort')?.value||'newest';
   let items=playlistData.filter(p=>(!search||`${p.title} ${p.genre} ${p.description}`.toLowerCase().includes(search))&&(!genre||p.genre===genre));
@@ -309,7 +310,8 @@ async function loadPlaylists(){
 async function loadAdminPlaylists(){
   try{const [d,beats]=await Promise.all([api('admin/playlists'),api('admin/beats')]);
     $('#plBeats').innerHTML=beats.beats.filter(b=>b.active).map(b=>`<option value="${b.id}">${esc(b.title)} · ${esc(b.genre||'Без жанра')} · #${b.id}</option>`).join('');
-    $('#adminPlaylistList').innerHTML=d.playlists.length?d.playlists.map(p=>`<article class="admin-playlist"><div><strong>${esc(p.title)}</strong><small>${esc(p.genre||'Без жанра')} · ${p.beat_ids.length} битов · ${p.active?'Опубликован':'Скрыт'}</small></div><button class="small-btn danger" data-delete-playlist="${p.id}">Удалить</button></article>`).join(''):'<p class="hint">Плейлистов пока нет. Создай первый слева.</p>';
+    $('#adminPlaylistList').innerHTML=d.playlists.length?d.playlists.map(p=>`<article class="admin-playlist"><div><strong>${esc(p.title)}</strong><small>${esc(p.genre||'Без жанра')} · ${p.beat_ids.length} битов · ${p.active?'Опубликован':'Скрыт'}</small></div><div class="admin-actions"><button class="small-btn" data-edit-playlist="${p.id}">Редактировать</button><button class="small-btn danger" data-delete-playlist="${p.id}">Удалить</button></div></article>`).join(''):'<p class="hint">Плейлистов пока нет. Создай первый слева.</p>';
+    $$('[data-edit-playlist]').forEach(b=>b.onclick=()=>{const p=d.playlists.find(x=>Number(x.id)===Number(b.dataset.editPlaylist));if(!p)return;editingPlaylistId=Number(p.id);$('#plTitle').value=p.title||'';$('#plGenre').value=p.genre||'';$('#plDescription').value=p.description||'';$('#plCover').value='';[...$('#plBeats').options].forEach(o=>o.selected=(p.beat_ids||[]).includes(Number(o.value)));$('#playlistForm').querySelector('[type="submit"]').textContent='СОХРАНИТЬ ИЗМЕНЕНИЯ ↗';$('#playlistForm').scrollIntoView({behavior:'smooth',block:'start'});});
     $$('[data-delete-playlist]').forEach(b=>b.onclick=async()=>{if(!confirm('Удалить этот плейлист?'))return;try{await api(`admin/playlists/${b.dataset.deletePlaylist}`,{method:'DELETE'});toast('Плейлист удалён');loadAdminPlaylists();loadPlaylists()}catch(e){toast(e.message,true)}});
   }catch(e){$('#adminPlaylistList').innerHTML=`<p class="hint">${esc(e.message)}</p>`;}
 }
@@ -317,8 +319,8 @@ async function createPlaylist(event){
   event.preventDefault();const status=$('#playlistFormStatus'),btn=$('#playlistForm').querySelector('[type="submit"]');btn.disabled=true;status.textContent='Создаём плейлист…';
   try{let cover_key='';const file=$('#plCover').files[0];if(file){const body=new FormData();body.append('file',file);body.append('type','cover');const uploaded=await api('admin/upload',{method:'POST',body});cover_key=uploaded.key;}
     const beat_ids=[$$('#plBeats option:checked')].flat().map(o=>Number(o.value));
-    await api('admin/playlists',{method:'POST',body:JSON.stringify({title:$('#plTitle').value,genre:$('#plGenre').value,description:$('#plDescription').value,cover_key,beat_ids})});
-    $('#playlistForm').reset();status.textContent='';toast('Плейлист создан');await loadAdminPlaylists();await loadPlaylists();
+    await api(editingPlaylistId?`admin/playlists/${editingPlaylistId}`:'admin/playlists',{method:editingPlaylistId?'PUT':'POST',body:JSON.stringify({title:$('#plTitle').value,genre:$('#plGenre').value,description:$('#plDescription').value,cover_key,beat_ids})});
+    const wasEditing=Boolean(editingPlaylistId);editingPlaylistId=null;$('#playlistForm').reset();$('#playlistForm').querySelector('[type="submit"]').textContent='СОЗДАТЬ ПЛЕЙЛИСТ ↗';status.textContent='';toast(wasEditing?'Плейлист обновлён':'Плейлист создан');await loadAdminPlaylists();await loadPlaylists();
   }catch(e){status.textContent=e.message;toast(e.message,true)}finally{btn.disabled=false;}
 }
 
@@ -346,13 +348,24 @@ async function loadAdminContent(){
 $('#siteContentForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content',{method:'PUT',body:JSON.stringify({licenses_description:f.elements.licenses_description.value,services_description:f.elements.services_description.value})});toast('Описания сохранены');await loadSiteContent()}catch(err){toast(err.message,true)}});
 $('#serviceForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content/services',{method:'POST',body:JSON.stringify({title:f.elements.title.value,description:f.elements.description.value})});f.reset();toast('Услуга добавлена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}});
 function switchAdminTab(tab){
+  const paneTab = tab==='services'||tab==='licenses' ? 'content' : tab==='beats' ? 'manage' : tab;
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.admin-pane').forEach(p=>p.classList.add('hidden'));
-  $('#admin'+tab[0].toUpperCase()+tab.slice(1)).classList.remove('hidden');
+  const pane=$('#admin'+paneTab[0].toUpperCase()+paneTab.slice(1));
+  if(pane)pane.classList.remove('hidden');
+  const licenseField=$('#siteContentForm label.license-description-field');
+  const servicesDescriptionField=$('#siteContentForm label.services-description-field');
+  const serviceCreate=$('.service-create-form'), serviceList=$('#adminServicesList');
+  if(licenseField)licenseField.classList.toggle('hidden',tab!=='licenses');
+  if(servicesDescriptionField)servicesDescriptionField.classList.toggle('hidden',tab!=='services');
+  if(licenseField)licenseField.querySelector('textarea').required=tab==='licenses';
+  if(servicesDescriptionField)servicesDescriptionField.querySelector('textarea').required=tab==='services';
+  if(serviceCreate)serviceCreate.classList.toggle('hidden',tab!=='services');
+  if(serviceList)serviceList.classList.toggle('hidden',tab!=='services');
   if(tab==='orders')loadAdminOrders();
-  if(tab==='manage')loadAdminBeats();
+  if(tab==='beats')loadAdminBeats();
   if(tab==='playlists')loadAdminPlaylists();
-  if(tab==='content')loadAdminContent();
+  if(tab==='services'||tab==='licenses')loadAdminContent();
 }
 async function loadAdminOrders(){
   try{
@@ -372,10 +385,12 @@ async function loadAdminOrders(){
 async function loadAdminBeats(){
   try{
     const d=await api('admin/beats');
-    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map((b,i)=>`<article class="admin-beat"><div class="admin-beat-art" aria-hidden="true"><span>${String(i+1).padStart(2,'0')}</span><i class="mini-wave"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i></div><div class="admin-beat-main"><div class="admin-beat-titleline"><strong>${esc(b.title)}</strong><span class="admin-beat-status ${b.active?'is-live':'is-hidden'}"><i></i>${b.active?'В продаже':'Снят с продажи'}</span></div><small>${esc(b.genre||'Без жанра')} <span class="meta-dot">·</span> ${b.bpm||'—'} BPM <span class="meta-dot">·</span> ${esc(b.musical_key||'—')} <span class="meta-dot">·</span> #${b.id}</small>${b.description&&String(b.description).trim()?`<p class="admin-beat-description">${esc(b.description)}</p>`:''}<div class="admin-beat-prices"><span>MP3 <b>${Number(b.mp3_price||0).toLocaleString('ru-RU')} ₽</b></span><span>WAV <b>${Number(b.wav_price||0).toLocaleString('ru-RU')} ₽</b></span><span>STEMS <b>${Number(b.stems_price||0).toLocaleString('ru-RU')} ₽</b></span></div></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Снять с продажи</button>`:`<button class="small-btn relist-btn" data-show="${b.id}">Выгрузить повторно ↗</button>`}</div></article>`).join('')+'</div>':'<div class="admin-empty"><span>♪</span><strong>Каталог пока пуст</strong><p>Добавь первый бит — он появится здесь отдельной строкой.</p></div>';
+    $('#adminManage').innerHTML=d.beats.length?'<div class="admin-beat-list">'+d.beats.map((b,i)=>`<article class="admin-beat"><div class="admin-beat-art" aria-hidden="true"><span>${String(i+1).padStart(2,'0')}</span><i class="mini-wave"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i></div><div class="admin-beat-main"><div class="admin-beat-titleline"><strong>${esc(b.title)}</strong><span class="admin-beat-status ${b.active?'is-live':'is-hidden'}"><i></i>${b.active?'В продаже':'Снят с продажи'}</span></div><small>${esc(b.genre||'Без жанра')} <span class="meta-dot">·</span> ${b.bpm||'—'} BPM <span class="meta-dot">·</span> ${esc(b.musical_key||'—')} <span class="meta-dot">·</span> #${b.id}</small>${b.description&&String(b.description).trim()?`<p class="admin-beat-description">${esc(b.description)}</p>`:''}<div class="admin-beat-prices"><span>MP3 <b>${Number(b.mp3_price||0).toLocaleString('ru-RU')} ₽</b></span><span>WAV <b>${Number(b.wav_price||0).toLocaleString('ru-RU')} ₽</b></span><span>STEMS <b>${Number(b.stems_price||0).toLocaleString('ru-RU')} ₽</b></span></div></div><div class="admin-actions"><button class="small-btn" data-edit="${b.id}">Изменить</button>${b.active?`<button class="small-btn danger" data-hide="${b.id}">Снять с продажи</button>`:`<button class="small-btn relist-btn" data-show="${b.id}">Выгрузить повторно ↗</button>`}<button class="small-btn" data-add-to-playlist="${b.id}">В плейлист</button><button class="small-btn danger" data-delete-beat="${b.id}">Удалить</button></div></article>`).join('')+'</div>':'<div class="admin-empty"><span>♪</span><strong>Каталог пока пуст</strong><p>Добавь первый бит — он появится здесь отдельной строкой.</p></div>';
     $$('[data-edit]').forEach(b=>b.onclick=()=>editBeat(d.beats.find(x=>x.id===Number(b.dataset.edit))));
     $$('[data-hide]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.hide,false));
     $$('[data-show]').forEach(b=>b.onclick=()=>toggleBeat(b.dataset.show,true));
+    $$('[data-add-to-playlist]').forEach(b=>b.onclick=async()=>{try{const d=await api('admin/playlists');if(!d.playlists.length){toast('Сначала создай плейлист во вкладке «Плейлисты».',true);return;}const menu=d.playlists.map((p,i)=>`${i+1}. ${p.title}`).join('\n');const choice=prompt(`В какой плейлист добавить бит? Введи номер:\n${menu}`);if(choice===null)return;const index=Number(choice)-1;const p=d.playlists[index];if(!p){toast('Неверный номер плейлиста.',true);return;}const ids=[...new Set([...(p.beat_ids||[]).map(Number),Number(b.dataset.addToPlaylist)])];await api(`admin/playlists/${p.id}`,{method:'PUT',body:JSON.stringify({title:p.title,genre:p.genre,description:p.description,cover_key:p.cover_key,beat_ids:ids})});toast(`Бит добавлен в «${p.title}»`);await loadAdminPlaylists();await loadPlaylists();}catch(e){toast(e.message,true)}});
+    $$('[data-delete-beat]').forEach(b=>b.onclick=async()=>{if(!confirm('Удалить бит из каталога? Он будет снят с продажи и исчезнет из плейлистов.'))return;try{await api(`admin/beats/${b.dataset.deleteBeat}`,{method:'DELETE'});toast('Бит удалён из каталога');await loadAdminBeats();await loadAdminPlaylists();await loadCatalog()}catch(e){toast(e.message,true)}});
   }catch(e){$('#adminManage').innerHTML=`<p class="hint">${esc(e.message)}</p>`}
 }
 async function toggleBeat(id,active){

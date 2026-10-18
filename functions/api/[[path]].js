@@ -755,6 +755,21 @@ async function handle(request, env) {
     for(let i=0;i<beatIds.length;i++) await env.DB.prepare("INSERT INTO playlist_beats (playlist_id,beat_id,position) VALUES (?,?,?)").bind(id,beatIds[i],i).run();
     return json({ok:true,id});
   }
+  const playlistEdit=path.match(/^admin\/playlists\/(\d+)$/);
+  if(playlistEdit && method==="PUT") {
+    let data; try { data=await request.json(); } catch { return fail("Некорректные данные плейлиста."); }
+    const id=Number(playlistEdit[1]), title=String(data.title||"").trim(), genre=String(data.genre||"").trim(), description=String(data.description||"").trim(), cover_key=String(data.cover_key||"").trim();
+    const beatIds=[...new Set((Array.isArray(data.beat_ids)?data.beat_ids:[]).map(Number).filter(Number.isInteger))];
+    if(!title) return fail("Укажи название плейлиста.");
+    if(!beatIds.length) return fail("Выбери хотя бы один бит из каталога.");
+    const placeholders=beatIds.map(()=>"?").join(",");
+    const {results: valid=[]}=await env.DB.prepare(`SELECT id FROM beats WHERE active=1 AND id IN (${placeholders})`).bind(...beatIds).all();
+    if(valid.length!==beatIds.length) return fail("Некоторые выбранные биты недоступны.");
+    await env.DB.prepare("UPDATE playlists SET title=?,genre=?,description=?,cover_key=? WHERE id=?").bind(title,genre,description,cover_key,id).run();
+    await env.DB.prepare("DELETE FROM playlist_beats WHERE playlist_id=?").bind(id).run();
+    for(let i=0;i<beatIds.length;i++) await env.DB.prepare("INSERT INTO playlist_beats (playlist_id,beat_id,position) VALUES (?,?,?)").bind(id,beatIds[i],i).run();
+    return json({ok:true,id});
+  }
   const playlistDelete=path.match(/^admin\/playlists\/(\d+)$/);
   if(playlistDelete && method==="DELETE") {
     const id=Number(playlistDelete[1]);
@@ -889,12 +904,10 @@ async function handle(request, env) {
   const beatMatch = path.match(/^admin\/beats\/(\d+)$/);
 
   if (beatMatch && method === "DELETE") {
-    await env.DB.prepare(
-      "UPDATE beats SET active=0 WHERE id=?"
-    )
-      .bind(Number(beatMatch[1]))
-      .run();
-
+    const beatId=Number(beatMatch[1]);
+    // Keep historical order references intact, but remove the beat from public listings and playlists.
+    await env.DB.prepare("DELETE FROM playlist_beats WHERE beat_id=?").bind(beatId).run();
+    await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?").bind(beatId).run();
     return json({ ok: true });
   }
 
