@@ -820,3 +820,22 @@ main,footer,.topbar{min-width:0}
 
 /* Separate service/license editor widgets */
 .admin-section-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:8px 0 20px}.admin-section-head h4{margin:0 0 6px}.license-admin-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}.license-admin-tile{display:flex;flex-direction:column;align-items:flex-start;gap:14px;text-align:left;padding:22px 18px;border:1px solid var(--line,#30343a);border-radius:14px;background:linear-gradient(145deg,#17191c,#0a0b0d);color:inherit;cursor:pointer;transition:border-color .2s,transform .2s}.license-admin-tile:hover{border-color:#aeb5bf;transform:translateY(-2px)}.license-admin-tile b{font-size:22px;letter-spacing:.04em}.license-admin-tile span{font-size:12px;color:#aeb4bd}.service-editor-card{width:min(760px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto;padding:30px}.service-editor-card h3{margin:8px 0 22px;font-size:26px}.service-editor-card .admin-form{display:grid;gap:16px}.service-editor-card .admin-form label{display:grid;gap:8px}.service-editor-card input:not([type=checkbox]):not([type=file]),.service-editor-card textarea{width:100%;box-sizing:border-box}.service-editor-card input[type=file]{padding:14px;border:1px dashed #555;border-radius:10px;background:#111}.service-editor-card .checkbox-line{display:flex!important;align-items:center;gap:10px}.modal-form-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid #292d32}.hint-inline{font-size:12px;color:#9ca3ad}.service-list-row{display:flex;align-items:center;gap:14px}.service-row-cover{width:76px;height:76px;flex:0 0 76px;display:grid;place-items:center;overflow:hidden;border-radius:10px;background:#101114;border:1px solid #30343a;color:#8b929c;font-size:12px}.service-row-cover img{width:100%;height:100%;object-fit:cover}.service-row-copy{flex:1;min-width:0}.service-row-copy p{margin:6px 0;color:#a5abb4}.service-row-copy small{color:#e2e5e9}.service-cover{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;margin-bottom:16px}.service-card>strong{display:block;margin-top:12px}@media(max-width:650px){.license-admin-tiles{grid-template-columns:1fr}.admin-section-head{align-items:flex-start;flex-direction:column}.service-editor-card{padding:22px 16px}.service-list-row{align-items:flex-start;flex-wrap:wrap}.service-row-copy{min-width:calc(100% - 100px)}}
+
+/* License tiles visibility fix: keep each license choice visible when its admin tab is active. */
+#adminLicenses:not(.hidden) .license-admin-tiles{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:24px 0;visibility:visible;opacity:1}
+#adminLicenses:not(.hidden) .license-admin-tile{display:flex!important;min-height:120px;position:relative;z-index:1;visibility:visible;opacity:1;background:#111!important;border:1px solid #454545!important;color:#fff!important;padding:22px;border-radius:12px}
+#adminLicenses:not(.hidden) .license-admin-tile b{display:block;color:#fff!important;font-size:22px}
+#adminLicenses:not(.hidden) .license-admin-tile span{display:block;color:#b9b9b9!important;font-size:12px}
+@media(max-width:650px){#adminLicenses:not(.hidden) .license-admin-tiles{grid-template-columns:1fr}}
+
+/* Public license tiles on the homepage */
+.public-license-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
+.public-license-card{min-width:0;overflow:hidden;border:1px solid #303238;border-radius:14px;background:linear-gradient(145deg,#151618,#090a0b);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.public-license-cover{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-bottom:1px solid #303238}
+.public-license-card-body{padding:24px}
+.public-license-card h3{margin:4px 0 12px;font:700 clamp(20px,2.3vw,28px) 'Space Grotesk',sans-serif;letter-spacing:-.04em;color:#f4f4f4}
+.public-license-card-body>p:not(.eyebrow){margin:0;color:#b3b5ba;line-height:1.75;white-space:pre-wrap}
+.public-license-terms{margin-top:18px;border-top:1px solid #303238;padding-top:14px;color:#d8d9dc}
+.public-license-terms summary{cursor:pointer;font-size:13px;letter-spacing:.02em}
+.public-license-terms p{margin:12px 0 0;color:#aeb0b5;line-height:1.7;white-space:pre-wrap}
+@media(max-width:760px){.public-license-grid{grid-template-columns:1fr}.public-license-card-body{padding:20px}}
