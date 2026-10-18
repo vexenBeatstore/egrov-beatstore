@@ -134,12 +134,12 @@ function supabaseConfig(env) {
 
 function bucketForKey(key) {
   // Supabase Storage buckets created for EGROV BeatStore:
-  // public cover/demo assets -> "covers"; paid master files -> "beats".
-  if (key.startsWith("covers/") || key.startsWith("demos/")) {
+  // cover images -> "covers"; demo audio and paid master audio -> "beats".
+  if (key.startsWith("covers/")) {
     return "covers";
   }
 
-  if (key.startsWith("masters/")) {
+  if (key.startsWith("demos/") || key.startsWith("masters/")) {
     return "beats";
   }
 
@@ -190,10 +190,14 @@ async function storageUpload(file, env, prefix) {
     const details = await response.text();
     console.error("Supabase upload error:", response.status, details);
 
+    const safeDetails = String(details || "")
+      .replace(/sb_secret_[A-Za-z0-9_-]+/g, "[redacted]")
+      .slice(0, 500);
+
     throw new Error(
       response.status === 413
         ? "Файл слишком большой для Supabase."
-        : `Supabase не смог загрузить файл (HTTP ${response.status}). Проверь bucket и настройки хранилища.`
+        : `Supabase не смог загрузить файл (HTTP ${response.status}). ${safeDetails || "Проверь существование bucket и настройки хранилища."}`
     );
   }
 
