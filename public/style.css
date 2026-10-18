@@ -839,3 +839,6 @@ main,footer,.topbar{min-width:0}
 .public-license-terms summary{cursor:pointer;font-size:13px;letter-spacing:.02em}
 .public-license-terms p{margin:12px 0 0;color:#aeb0b5;line-height:1.7;white-space:pre-wrap}
 @media(max-width:760px){.public-license-grid{grid-template-columns:1fr}.public-license-card-body{padding:20px}}
+
+/* Language / region selector */
+.region-btn{border:1px solid #333;background:#101010;color:#d8d8d8;border-radius:8px;padding:10px 12px;font-size:10px;letter-spacing:.4px;white-space:nowrap;cursor:pointer}.region-btn:hover{border-color:#777;color:#fff}.region-card{width:min(440px,100%)}.region-label{display:block;color:#aaa;font-size:10px;letter-spacing:.5px;margin:22px 0 8px}.region-select{width:100%;padding:13px;background:#101010;color:#eee;border:1px solid #333;border-radius:6px;font:inherit;margin-bottom:12px}.region-card .primary-btn{margin-top:12px}@media(max-width:700px){.region-btn{padding:8px 7px;font-size:9px}.topbar{grid-template-columns:minmax(80px,1fr) auto auto auto;gap:6px}.topbar nav{display:none}}
