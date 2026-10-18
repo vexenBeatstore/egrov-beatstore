@@ -133,12 +133,14 @@ function supabaseConfig(env) {
 }
 
 function bucketForKey(key) {
+  // Supabase Storage buckets created for EGROV BeatStore:
+  // public cover/demo assets -> "covers"; paid master files -> "beats".
   if (key.startsWith("covers/") || key.startsWith("demos/")) {
-    return "vexen-public";
+    return "covers";
   }
 
   if (key.startsWith("masters/")) {
-    return "vexen-private";
+    return "beats";
   }
 
   throw new Error("Недопустимый путь к файлу.");
@@ -256,7 +258,13 @@ async function handle(request, env) {
   const method = request.method;
 
   if (path === "health" && method === "GET") {
-    return json({ ok: true, service: "EGROV BeatStore API" });
+    return json({
+      ok: true,
+      service: "EGROV BeatStore API",
+      supabase_url_configured: Boolean(String(env.SUPABASE_URL || "").trim()),
+      supabase_secret_configured: Boolean(String(env.SUPABASE_SECRET_KEY || "").trim()),
+      d1_configured: Boolean(env.DB),
+    });
   }
 
   if (path === "config" && method === "GET") {
