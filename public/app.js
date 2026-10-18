@@ -417,7 +417,7 @@ async function editBeat(b){
 $('#search').addEventListener('input',renderCatalog);$('#sortOrder')?.addEventListener('change',renderCatalog);
 $('#genreFilter').addEventListener('change',renderCatalog);
 $('#cartOpen').onclick=()=>$('#cartDrawer').classList.remove('hidden');
-$('#favoritesOpen').onclick=async()=>{if(!state.user){toast('Войди через Telegram, чтобы пользоваться избранным.',true);openProfile();return;}await loadFavorites();showModal('favoritesModal');};
+$('#favoritesOpen')?.addEventListener('click',async()=>{if(!state.user){toast('Войди через Telegram, чтобы пользоваться избранным.',true);openProfile();return;}await loadFavorites();showModal('favoritesModal');});
 $('#playFavorites').onclick=playFavoritesQueue;
 $('#checkoutOpen').onclick=()=>{
   if(!cartResolved().length)return;
@@ -429,7 +429,7 @@ $('#checkoutForm').addEventListener('submit',checkout);
 $('#profileOpen').onclick=openProfile;
 $('#adminPanelOpen').onclick=()=>{showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');if(state.admin){$('#adminApp').classList.remove('hidden');switchAdminTab('add');}else{checkAuth();}};
 $('#myOrderOpen').onclick=showOrder;
-$('#footerOrderOpen').onclick=showOrder;
+$('#footerOrderOpen')?.addEventListener('click',showOrder);
 
 
 function setUploadStep(step){
