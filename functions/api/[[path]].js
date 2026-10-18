@@ -259,7 +259,47 @@ async function handle(request, env) {
 
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/?/, "");
+
   const method = request.method;
+  // Content tables are created idempotently so existing D1 installations upgrade automatically.
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS site_content (id INTEGER PRIMARY KEY CHECK (id = 1), licenses_description TEXT NOT NULL DEFAULT 'Выбери лицензию под свой релиз: MP3 — для быстрого старта, WAV — для высокого качества, STEMS — для гибкой работы со сведением.', services_description TEXT NOT NULL DEFAULT 'Помогаю подобрать звук и подготовить материал к релизу.')").run();
+  await env.DB.prepare("INSERT OR IGNORE INTO site_content (id) VALUES (1)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+
+  if (path === "content" && method === "GET") {
+    const { results: rows = [] } = await env.DB.prepare("SELECT * FROM site_content WHERE id=1").all();
+    const { results: services = [] } = await env.DB.prepare("SELECT id,title,description FROM services WHERE active=1 ORDER BY id DESC").all();
+    return json({ content: rows[0] || {}, services });
+  }
+
+  if (path.startsWith("admin/content")) {
+    const session = await readUserSession(request, env);
+    if (!session || !env.ADMIN_TELEGRAM_ID || String(session.id) !== String(env.ADMIN_TELEGRAM_ID)) return fail("Доступ запрещён.", 403);
+    if (path === "admin/content" && method === "PUT") {
+      const data = await request.json();
+      await env.DB.prepare("UPDATE site_content SET licenses_description=?, services_description=? WHERE id=1")
+        .bind(String(data.licenses_description || "").slice(0,10000), String(data.services_description || "").slice(0,10000)).run();
+      return json({ok:true});
+    }
+    if (path === "admin/content/services" && method === "POST") {
+      const data = await request.json(), title = String(data.title || "").trim();
+      if (!title) return fail("Укажи название услуги.");
+      await env.DB.prepare("INSERT INTO services (title,description) VALUES (?,?)").bind(title.slice(0,200),String(data.description || "").slice(0,5000)).run();
+      return json({ok:true});
+    }
+    const match = path.match(/^admin\/content\/services\/(\d+)$/);
+    if (match && method === "PUT") {
+      const data = await request.json(), title = String(data.title || "").trim();
+      if (!title) return fail("Укажи название услуги.");
+      await env.DB.prepare("UPDATE services SET title=?,description=? WHERE id=?").bind(title.slice(0,200),String(data.description || "").slice(0,5000),Number(match[1])).run();
+      return json({ok:true});
+    }
+    if (match && method === "DELETE") {
+      await env.DB.prepare("DELETE FROM services WHERE id=?").bind(Number(match[1])).run();
+      return json({ok:true});
+    }
+  }
+
 
   if (path === "health" && method === "GET") {
     return json({

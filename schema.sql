@@ -82,3 +82,19 @@ CREATE TABLE IF NOT EXISTS playlist_beats (
 );
 CREATE INDEX IF NOT EXISTS idx_playlists_active ON playlists(active, created_at);
 CREATE INDEX IF NOT EXISTS idx_playlist_beats_order ON playlist_beats(playlist_id, position);
+
+
+CREATE TABLE IF NOT EXISTS site_content (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  licenses_description TEXT NOT NULL DEFAULT 'Выбери лицензию под свой релиз: MP3 — для быстрого старта, WAV — для высокого качества, STEMS — для гибкой работы со сведением.',
+  services_description TEXT NOT NULL DEFAULT 'Помогаю подобрать звук и подготовить материал к релизу.'
+);
+INSERT OR IGNORE INTO site_content (id) VALUES (1);
+
+CREATE TABLE IF NOT EXISTS services (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

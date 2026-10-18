@@ -244,7 +244,7 @@ window.onTelegramAuth=async user=>{
     toast('Вход выполнен');
     await checkAuth();
     hideModal('adminModal');
-    document.getElementById('catalog')?.scrollIntoView({behavior:'smooth',block:'start'});
+    if(!document.body.classList.contains('admin-page')) window.scrollTo({top:0,behavior:'smooth'});
   }catch(e){toast(e.message,true)}
 };
 async function checkAuth(){
@@ -322,6 +322,29 @@ async function createPlaylist(event){
   }catch(e){status.textContent=e.message;toast(e.message,true)}finally{btn.disabled=false;}
 }
 
+
+async function loadSiteContent(){
+  try{
+    const d=await api('content');
+    const license=$('#licensesDescriptionText'), serviceDesc=$('#servicesDescriptionText'), list=$('#servicesList');
+    if(license)license.textContent=d.content?.licenses_description||'';
+    if(serviceDesc)serviceDesc.textContent=d.content?.services_description||'';
+    if(list)list.innerHTML=(d.services||[]).length?d.services.map(s=>`<article class="service-card"><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p></article>`).join(''):'<p class="content-description">Список услуг скоро появится.</p>';
+  }catch(e){console.warn('Не удалось загрузить описания:',e.message)}
+}
+async function loadAdminContent(){
+  try{
+    const d=await api('content'), f=$('#siteContentForm');
+    f.elements.namedItem('licenses_description').value=d.content?.licenses_description||'';
+    f.elements.namedItem('services_description').value=d.content?.services_description||'';
+    const list=$('#adminServicesList');
+    list.innerHTML=(d.services||[]).map(s=>`<form class="admin-service-item" data-service-id="${s.id}"><label>Название<input name="title" required value="${esc(s.title)}"></label><label>Описание<textarea name="description" rows="3">${esc(s.description)}</textarea></label><div class="admin-service-actions"><button class="small-btn" type="submit">Сохранить</button><button class="danger-btn" type="button" data-delete-service="${s.id}">Удалить</button></div></form>`).join('')||'<p class="hint">Пока нет добавленных услуг.</p>';
+    list.querySelectorAll('[data-service-id]').forEach(form=>form.addEventListener('submit',async e=>{e.preventDefault();try{await api(`admin/content/services/${form.dataset.serviceId}`,{method:'PUT',body:JSON.stringify({title:form.elements.title.value,description:form.elements.description.value})});toast('Услуга обновлена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}}));
+    list.querySelectorAll('[data-delete-service]').forEach(btn=>btn.addEventListener('click',async()=>{if(!confirm('Удалить эту услугу?'))return;try{await api(`admin/content/services/${btn.dataset.deleteService}`,{method:'DELETE'});toast('Услуга удалена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}}));
+  }catch(e){toast(e.message,true)}
+}
+$('#siteContentForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content',{method:'PUT',body:JSON.stringify({licenses_description:f.elements.licenses_description.value,services_description:f.elements.services_description.value})});toast('Описания сохранены');await loadSiteContent()}catch(err){toast(err.message,true)}});
+$('#serviceForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content/services',{method:'POST',body:JSON.stringify({title:f.elements.title.value,description:f.elements.description.value})});f.reset();toast('Услуга добавлена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}});
 function switchAdminTab(tab){
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.admin-pane').forEach(p=>p.classList.add('hidden'));
@@ -329,6 +352,7 @@ function switchAdminTab(tab){
   if(tab==='orders')loadAdminOrders();
   if(tab==='manage')loadAdminBeats();
   if(tab==='playlists')loadAdminPlaylists();
+  if(tab==='content')loadAdminContent();
 }
 async function loadAdminOrders(){
   try{
@@ -392,7 +416,7 @@ $('#checkoutOpen').onclick=()=>{
 };
 $('#checkoutForm').addEventListener('submit',checkout);
 $('#profileOpen').onclick=openProfile;
-$('#adminPanelOpen').onclick=openAdmin;
+$('#adminPanelOpen').onclick=()=>{window.location.href='/admin.html'};
 $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
@@ -505,8 +529,9 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
 $('#year').textContent=new Date().getFullYear();
+loadSiteContent();
+if(document.body.classList.contains('admin-page')){openAdmin();} else {checkAuth();}
 loadPlaylists();
-checkAuth();
 
 renderCart();
 initGlobalPlayer();
