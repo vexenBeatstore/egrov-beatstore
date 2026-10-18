@@ -265,11 +265,19 @@ async function handle(request, env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS site_content (id INTEGER PRIMARY KEY CHECK (id = 1), licenses_description TEXT NOT NULL DEFAULT 'Выбери лицензию под свой релиз: MP3 — для быстрого старта, WAV — для высокого качества, STEMS — для гибкой работы со сведением.', services_description TEXT NOT NULL DEFAULT 'Помогаю подобрать звук и подготовить материал к релизу.')").run();
   await env.DB.prepare("INSERT OR IGNORE INTO site_content (id) VALUES (1)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  // Safe additive migrations for service pricing/covers and per-license content.
+  for (const sql of [
+    "ALTER TABLE services ADD COLUMN price INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE services ADD COLUMN cover_key TEXT NOT NULL DEFAULT ''"
+  ]) { try { await env.DB.prepare(sql).run(); } catch (_) {} }
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS license_content (license TEXT PRIMARY KEY, description TEXT NOT NULL DEFAULT '', terms TEXT NOT NULL DEFAULT '', cover_key TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  for (const license of ['mp3','wav','stems']) await env.DB.prepare("INSERT OR IGNORE INTO license_content (license) VALUES (?)").bind(license).run();
 
   if (path === "content" && method === "GET") {
     const { results: rows = [] } = await env.DB.prepare("SELECT * FROM site_content WHERE id=1").all();
-    const { results: services = [] } = await env.DB.prepare("SELECT id,title,description FROM services WHERE active=1 ORDER BY id DESC").all();
-    return json({ content: rows[0] || {}, services });
+    const { results: services = [] } = await env.DB.prepare("SELECT id,title,description,price,cover_key,active FROM services WHERE active=1 ORDER BY id DESC").all();
+    const { results: licenses = [] } = await env.DB.prepare("SELECT license,description,terms,cover_key FROM license_content").all();
+    return json({ content: rows[0] || {}, services, licenses });
   }
 
   if (path.startsWith("admin/content")) {
@@ -281,17 +289,23 @@ async function handle(request, env) {
         .bind(String(data.licenses_description || "").slice(0,10000), String(data.services_description || "").slice(0,10000)).run();
       return json({ok:true});
     }
+    if (path === "admin/content/licenses" && method === "PUT") {
+      const data = await request.json(), license=String(data.license||'');
+      if (!['mp3','wav','stems'].includes(license)) return fail('Неизвестная лицензия.');
+      await env.DB.prepare("INSERT INTO license_content (license,description,terms,cover_key,updated_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(license) DO UPDATE SET description=excluded.description,terms=excluded.terms,cover_key=excluded.cover_key,updated_at=CURRENT_TIMESTAMP").bind(license,String(data.description||'').slice(0,5000),String(data.terms||'').slice(0,10000),String(data.cover_key||'').slice(0,500)).run();
+      return json({ok:true});
+    }
     if (path === "admin/content/services" && method === "POST") {
       const data = await request.json(), title = String(data.title || "").trim();
       if (!title) return fail("Укажи название услуги.");
-      await env.DB.prepare("INSERT INTO services (title,description) VALUES (?,?)").bind(title.slice(0,200),String(data.description || "").slice(0,5000)).run();
+      await env.DB.prepare("INSERT INTO services (title,description,price,cover_key,active) VALUES (?,?,?,?,?)").bind(title.slice(0,200),String(data.description || "").slice(0,5000),Math.max(0,Math.round(Number(data.price)||0)),String(data.cover_key||'').slice(0,500),data.active===false?0:1).run();
       return json({ok:true});
     }
     const match = path.match(/^admin\/content\/services\/(\d+)$/);
     if (match && method === "PUT") {
       const data = await request.json(), title = String(data.title || "").trim();
       if (!title) return fail("Укажи название услуги.");
-      await env.DB.prepare("UPDATE services SET title=?,description=? WHERE id=?").bind(title.slice(0,200),String(data.description || "").slice(0,5000),Number(match[1])).run();
+      await env.DB.prepare("UPDATE services SET title=?,description=?,price=?,cover_key=?,active=? WHERE id=?").bind(title.slice(0,200),String(data.description || "").slice(0,5000),Math.max(0,Math.round(Number(data.price)||0)),String(data.cover_key||'').slice(0,500),data.active===false?0:1,Number(match[1])).run();
       return json({ok:true});
     }
     if (match && method === "DELETE") {

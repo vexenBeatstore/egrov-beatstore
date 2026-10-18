@@ -331,41 +331,34 @@ async function loadSiteContent(){
     const license=$('#licensesDescriptionText'), serviceDesc=$('#servicesDescriptionText'), list=$('#servicesList');
     if(license)license.textContent=d.content?.licenses_description||'';
     if(serviceDesc)serviceDesc.textContent=d.content?.services_description||'';
-    if(list)list.innerHTML=(d.services||[]).length?d.services.map(s=>`<article class="service-card"><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p></article>`).join(''):'<p class="content-description">Список услуг скоро появится.</p>';
+    if(list)list.innerHTML=(d.services||[]).length?d.services.map(s=>`<article class="service-card">${s.cover_key?`<img class="service-cover" src="${esc(s.cover_key)}" alt="">`:''}<h3>${esc(s.title)}</h3>${s.description?`<p>${esc(s.description)}</p>`:''}<strong>${rub(s.price||0)}</strong></article>`).join(''):'<p class="content-description">Список услуг скоро появится.</p>';
   }catch(e){console.warn('Не удалось загрузить описания:',e.message)}
 }
 async function loadAdminContent(){
   try{
-    const d=await api('content'), f=$('#siteContentForm');
-    f.elements.namedItem('licenses_description').value=d.content?.licenses_description||'';
-    f.elements.namedItem('services_description').value=d.content?.services_description||'';
+    const d=await api('content');
     const list=$('#adminServicesList');
-    list.innerHTML=(d.services||[]).map(s=>`<form class="admin-service-item" data-service-id="${s.id}"><label>Название<input name="title" required value="${esc(s.title)}"></label><label>Описание<textarea name="description" rows="3">${esc(s.description)}</textarea></label><div class="admin-service-actions"><button class="small-btn" type="submit">Сохранить</button><button class="danger-btn" type="button" data-delete-service="${s.id}">Удалить</button></div></form>`).join('')||'<p class="hint">Пока нет добавленных услуг.</p>';
-    list.querySelectorAll('[data-service-id]').forEach(form=>form.addEventListener('submit',async e=>{e.preventDefault();try{await api(`admin/content/services/${form.dataset.serviceId}`,{method:'PUT',body:JSON.stringify({title:form.elements.title.value,description:form.elements.description.value})});toast('Услуга обновлена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}}));
+    list.innerHTML=(d.services||[]).map(s=>`<article class="admin-service-item service-list-row"><div class="service-row-cover">${s.cover_key?`<img src="${esc(s.cover_key)}" alt="">`:'<span>EGROV</span>'}</div><div class="service-row-copy"><strong>${esc(s.title)}</strong><p>${esc(s.description||'Описание не добавлено')}</p><small>${rub(s.price||0)} · ${s.active?'Активна':'Скрыта'}</small></div><div class="admin-service-actions"><button class="small-btn" type="button" data-edit-service="${s.id}">Редактировать</button><button class="danger-btn" type="button" data-delete-service="${s.id}">Удалить</button></div></article>`).join('')||'<p class="hint">Пока нет добавленных услуг.</p>';
+    list.querySelectorAll('[data-edit-service]').forEach(btn=>btn.addEventListener('click',()=>openServiceEditor((d.services||[]).find(x=>x.id===Number(btn.dataset.editService)))));
     list.querySelectorAll('[data-delete-service]').forEach(btn=>btn.addEventListener('click',async()=>{if(!confirm('Удалить эту услугу?'))return;try{await api(`admin/content/services/${btn.dataset.deleteService}`,{method:'DELETE'});toast('Услуга удалена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}}));
+    window.__adminLicenses=d.licenses||[];
   }catch(e){toast(e.message,true)}
 }
-$('#siteContentForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content',{method:'PUT',body:JSON.stringify({licenses_description:f.elements.licenses_description.value,services_description:f.elements.services_description.value})});toast('Описания сохранены');await loadSiteContent()}catch(err){toast(err.message,true)}});
-$('#serviceForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('admin/content/services',{method:'POST',body:JSON.stringify({title:f.elements.title.value,description:f.elements.description.value})});f.reset();toast('Услуга добавлена');await loadAdminContent();await loadSiteContent()}catch(err){toast(err.message,true)}});
+function closeWidget(which){const el=$('#'+(which==='service'?'serviceEditorModal':'licenseEditorModal'));if(el)el.classList.add('hidden')}
+function openServiceEditor(service=null){const modal=$('#serviceEditorModal'),f=$('#serviceEditorForm');f.reset();f.elements.id.value=service?.id||'';f.elements.title.value=service?.title||'';f.elements.description.value=service?.description||'';f.elements.price.value=service?.price??'';f.elements.active.checked=service?Boolean(service.active):true;$('#serviceEditorTitle').textContent=service?'Редактировать услугу':'Добавить услугу';$('#serviceEditorStatus').textContent='';modal.classList.remove('hidden')}
+function openLicenseEditor(key){const d=(window.__adminLicenses||[]).find(x=>x.license===key)||{};const f=$('#licenseEditorForm');f.reset();f.elements.license.value=key;f.elements.description.value=d.description||'';f.elements.terms.value=d.terms||'';$('#licenseEditorTitle').textContent='Лицензия '+({mp3:'MP3',wav:'WAV',stems:'WAV + STEMS'}[key]);$('#licenseEditorStatus').textContent='';$('#licenseEditorModal').classList.remove('hidden')}
+$('#openServiceEditor')?.addEventListener('click',()=>openServiceEditor());
+document.querySelectorAll('[data-edit-license]').forEach(btn=>btn.addEventListener('click',()=>openLicenseEditor(btn.dataset.editLicense)));
+document.querySelectorAll('[data-close-widget]').forEach(btn=>btn.addEventListener('click',()=>closeWidget(btn.dataset.closeWidget)));
+async function uploadCover(file){if(!file)return '';const body=new FormData();body.append('file',file);body.append('type','cover');const uploaded=await api('admin/upload',{method:'POST',body});return uploaded.key}
+$('#serviceEditorForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,status=$('#serviceEditorStatus'),btn=f.querySelector('[type="submit"]');btn.disabled=true;try{const id=f.elements.id.value;let cover_key='';if(f.elements.cover.files[0])cover_key=await uploadCover(f.elements.cover.files[0]);else if(id){const d=await api('content');cover_key=(d.services||[]).find(x=>x.id===Number(id))?.cover_key||''}const data={title:f.elements.title.value,description:f.elements.description.value,price:Number(f.elements.price.value),active:f.elements.active.checked,cover_key};await api(id?`admin/content/services/${id}`:'admin/content/services',{method:id?'PUT':'POST',body:JSON.stringify(data)});status.textContent='Сохранено';closeWidget('service');toast(id?'Услуга обновлена':'Услуга добавлена');await loadAdminContent();await loadSiteContent()}catch(err){status.textContent=err.message;toast(err.message,true)}finally{btn.disabled=false}});
+$('#licenseEditorForm')?.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,status=$('#licenseEditorStatus'),btn=f.querySelector('[type="submit"]');btn.disabled=true;try{const key=f.elements.license.value;let cover_key=(window.__adminLicenses||[]).find(x=>x.license===key)?.cover_key||'';if(f.elements.cover.files[0])cover_key=await uploadCover(f.elements.cover.files[0]);await api('admin/content/licenses',{method:'PUT',body:JSON.stringify({license:key,description:f.elements.description.value,terms:f.elements.terms.value,cover_key})});closeWidget('license');toast('Описание лицензии сохранено');await loadAdminContent()}catch(err){status.textContent=err.message;toast(err.message,true)}finally{btn.disabled=false}});
 function switchAdminTab(tab){
-  const paneTab = tab==='services'||tab==='licenses' ? 'content' : tab==='beats' ? 'manage' : tab;
   $$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   $$('.admin-pane').forEach(p=>p.classList.add('hidden'));
-  const pane=$('#admin'+paneTab[0].toUpperCase()+paneTab.slice(1));
-  if(pane)pane.classList.remove('hidden');
-  const licenseField=$('#siteContentForm label.license-description-field');
-  const servicesDescriptionField=$('#siteContentForm label.services-description-field');
-  const serviceCreate=$('.service-create-form'), serviceList=$('#adminServicesList');
-  if(licenseField)licenseField.classList.toggle('hidden',tab!=='licenses');
-  if(servicesDescriptionField)servicesDescriptionField.classList.toggle('hidden',tab!=='services');
-  if(licenseField)licenseField.querySelector('textarea').required=tab==='licenses';
-  if(servicesDescriptionField)servicesDescriptionField.querySelector('textarea').required=tab==='services';
-  if(serviceCreate)serviceCreate.classList.toggle('hidden',tab!=='services');
-  if(serviceList)serviceList.classList.toggle('hidden',tab!=='services');
-  if(tab==='orders')loadAdminOrders();
-  if(tab==='beats')loadAdminBeats();
-  if(tab==='playlists')loadAdminPlaylists();
-  if(tab==='services'||tab==='licenses')loadAdminContent();
+  const map={services:'adminServices',licenses:'adminLicenses',beats:'adminManage',manage:'adminManage',add:'adminAdd',orders:'adminOrders',playlists:'adminPlaylists'};
+  const pane=$('#'+(map[tab]||'adminAdd'));if(pane)pane.classList.remove('hidden');
+  if(tab==='orders')loadAdminOrders();if(tab==='beats'||tab==='manage')loadAdminBeats();if(tab==='playlists')loadAdminPlaylists();if(tab==='services'||tab==='licenses')loadAdminContent();
 }
 async function loadAdminOrders(){
   try{
