@@ -848,3 +848,13 @@ main,footer,.topbar{min-width:0}
 .region-select{width:100%;height:46px;padding:0 12px;border:1px solid #303030;border-radius:8px;background:#111;color:#eee;font:500 13px 'DM Sans',sans-serif;outline:none}
 .region-select:focus{border-color:#888}
 @media(max-width:760px){.region-btn{height:34px;padding:0 8px;font-size:10px}.topbar{gap:8px}.topbar nav{gap:8px}}
+
+/* Header controls stay together and in a predictable order on desktop and mobile. */
+.topbar nav.topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:nowrap;min-width:0}
+.topbar-actions #cartOpen{order:2;white-space:nowrap}
+.topbar-actions #profileOpen{order:1;white-space:nowrap}
+.topbar-actions #myOrderOpen{order:3;white-space:nowrap}
+.topbar-actions #adminPanelOpen{order:4;white-space:nowrap}
+.topbar-actions #regionOpen{order:5;flex:0 0 auto}
+@media(max-width:760px){.topbar{padding:0 12px;gap:8px}.topbar .brand-logo{width:95px;height:52px}.topbar nav.topbar-actions{gap:6px}.topbar-actions .nav-admin{padding:8px 9px;font-size:9px;letter-spacing:.2px}.topbar-actions .nav-link-btn{font-size:10px}.topbar-actions .cart-btn{padding:7px 9px;font-size:10px}.topbar-actions .cart-btn span{min-width:17px;height:17px;margin-left:3px}.topbar-actions .region-btn{padding:0 7px;font-size:9px}}
+@media(max-width:420px){.topbar .brand-logo{width:72px}.topbar nav.topbar-actions{gap:5px}.topbar-actions #myOrderOpen{font-size:9px}.topbar-actions .nav-admin{padding:7px 6px}.topbar-actions .region-btn{font-size:8px;padding:0 5px}}
