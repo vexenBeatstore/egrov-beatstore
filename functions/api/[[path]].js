@@ -122,8 +122,13 @@ async function adminRequired(request, env) {
 /* ---------------- SUPABASE STORAGE ---------------- */
 
 function supabaseConfig(env) {
-  const base = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  const secret = String(env.SUPABASE_SECRET_KEY || "");
+  // SUPABASE_URL must be the project root, not /rest/v1 or /storage/v1.
+  // Normalize common pasted endpoint suffixes to prevent malformed Storage URLs.
+  const base = String(env.SUPABASE_URL || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/(?:rest\/v1|storage\/v1|auth\/v1)$/i, "");
+  const secret = String(env.SUPABASE_SECRET_KEY || "").trim();
 
   if (!base || !secret) {
     throw new Error("Не настроены SUPABASE_URL или SUPABASE_SECRET_KEY.");
@@ -133,16 +138,11 @@ function supabaseConfig(env) {
 }
 
 function bucketForKey(key) {
-  // Supabase Storage buckets created for EGROV BeatStore:
-  // cover images -> "covers"; demo audio and paid master audio -> "beats".
-  if (key.startsWith("covers/")) {
-    return "covers";
+  // EGROV BeatStore uses one Supabase Storage bucket named "egrov".
+  // Keep covers, demos and masters separated by folders inside that bucket.
+  if (key.startsWith("covers/") || key.startsWith("demos/") || key.startsWith("masters/")) {
+    return "egrov";
   }
-
-  if (key.startsWith("demos/") || key.startsWith("masters/")) {
-    return "beats";
-  }
-
   throw new Error("Недопустимый путь к файлу.");
 }
 
