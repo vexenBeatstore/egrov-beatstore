@@ -839,10 +839,3 @@ main,footer,.topbar{min-width:0}
 .public-license-terms summary{cursor:pointer;font-size:13px;letter-spacing:.02em}
 .public-license-terms p{margin:12px 0 0;color:#aeb0b5;line-height:1.7;white-space:pre-wrap}
 @media(max-width:760px){.public-license-grid{grid-template-columns:1fr}.public-license-card-body{padding:20px}}
-
-/* Simplified account navigation */
-.topbar .account-nav{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-left:auto;margin-right:18px;flex-wrap:wrap}
-.topbar .account-nav .nav-link-btn{color:#d0d0d0;font-size:11px;white-space:nowrap}
-.topbar .account-nav .nav-link-btn:hover{color:#fff}
-.topbar .account-nav .nav-admin{white-space:nowrap}
-@media(max-width:560px){.topbar .account-nav{gap:6px;margin-right:8px}.topbar .account-nav .nav-admin{font-size:8px;padding:7px 8px}.topbar .account-nav .nav-link-btn{font-size:9px}}
