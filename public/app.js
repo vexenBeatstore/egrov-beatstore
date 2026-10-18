@@ -219,7 +219,7 @@ async function showOrder(){
   }catch(e){toast(e.message,true)}
 }
 function openProfile(){showModal('adminModal');$('#authModalTitle').textContent=state.user?'Профиль':'Вход';$('#adminApp').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');loadTelegramLogin();checkAuth()} 
-function openAdmin(){showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');checkAdmin()}
+function openAdmin(){showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');checkAdmin()}
 async function loadTelegramLogin(){
   try{
     const c=await api('config');
@@ -275,11 +275,9 @@ async function checkAdmin(){
     $('#profileOpen').textContent='Профиль';$('#adminPanelOpen').classList.remove('hidden');
     loadAdminBeats();
     loadAdminPlaylists();
-    switchAdminTab('add');
   }catch{
     state.admin=false;$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');
-    await loadTelegramLogin();
-    toast('Войди через Telegram-аккаунт администратора, чтобы открыть вкладки.',true);
+    toast('Войди через Telegram-аккаунт администратора.',true);
   }
 }
 
@@ -433,7 +431,7 @@ $('#checkoutOpen').onclick=()=>{
 };
 $('#checkoutForm').addEventListener('submit',checkout);
 $('#profileOpen').onclick=openProfile;
-$('#adminPanelOpen').onclick=()=>{window.location.href='/admin.html'};
+$('#adminPanelOpen').onclick=()=>{showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');if(state.admin){$('#adminApp').classList.remove('hidden');switchAdminTab('add');}else{checkAuth();}};
 $('#myOrderOpen').onclick=showOrder;
 $('#footerOrderOpen').onclick=showOrder;
 
