@@ -35,6 +35,8 @@
   }
   function translate(source) {
     if (!source || !source.trim()) return source;
+    // Russian is the source language: never run it through the English bridge.
+    if (config().lang === 'ru') return source;
     // First map Russian source strings to English keys, then localize those English strings.
     let out = replaceFrom(source, common);
     if (config().lang !== 'en') out = replaceFrom(out, dictionaries[config().lang] || {});
@@ -49,13 +51,27 @@
       return new Intl.NumberFormat(locale,{style:'currency',currency:c.currency,maximumFractionDigits:0,minimumFractionDigits:0}).format(Math.ceil(n*c.rate));
     });
   }
+  const textPending = new WeakMap();
   function processText(node) {
     if (node.nodeType !== Node.TEXT_NODE) return;
-    if (node.parentElement?.closest('[data-remote-translated]') || node.parentElement?.closest(dynamicSelector)) return;
+    const parent = node.parentElement;
+    if (!parent || parent.closest('script,style,noscript,textarea,[contenteditable="true"],[data-remote-translated]') || parent.closest(dynamicSelector)) return;
+    // Beat names and genres are intentionally preserved.
+    if (parent.closest('.track-title,.beat-title,[data-beat-title],.genre,.track-genre,[data-genre]')) return;
     if (!originals.has(node)) originals.set(node, node.nodeValue);
     const source = originals.get(node);
-    const value = convertPrices(translate(source));
+    const mapped = translate(source);
+    const value = convertPrices(mapped);
     if (node.nodeValue !== value) node.nodeValue = value;
+    const lang = config().lang;
+    // Dictionary-first, online fallback for every remaining Russian UI fragment.
+    if (lang !== 'ru' && mapped === source && /[А-Яа-яЁё]/.test(source.trim())) {
+      if (textPending.get(node) === lang) return;
+      textPending.set(node, lang);
+      translateRemoteText(source, lang).then(result => {
+        if (node.isConnected && textPending.get(node) === lang && config().lang === lang) node.nodeValue = convertPrices(result);
+      }).catch(() => {}).finally(() => { if (textPending.get(node) === lang) textPending.delete(node); });
+    } else { textPending.delete(node); }
   }
   function processElement(el) {
     if (el.nodeType !== Node.ELEMENT_NODE) return;
