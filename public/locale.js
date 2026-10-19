@@ -64,8 +64,12 @@
     if (node.nodeType !== Node.TEXT_NODE) return;
     const parent = node.parentElement;
     if (!parent || parent.closest('script,style,noscript,textarea,[contenteditable="true"],[data-remote-translated]') || parent.closest(dynamicSelector)) return;
-    // Beat names and genres are intentionally preserved.
-    if (parent.closest('.track-title,.beat-title,[data-beat-title],.genre,.track-genre,[data-genre]')) return;
+    // Beat names and actual genre names are intentionally preserved. The catalog's
+    // fixed filter labels live inside [data-genre] buttons, so allow those labels through.
+    if (parent.closest('.track-title,.beat-title,[data-beat-title],.genre,.track-genre')) return;
+    const genreButton = parent.closest('[data-genre]');
+    const rawText = (originals.has(node) ? originals.get(node) : node.nodeValue).trim();
+    if (genreButton && !['Все биты', '◈ Все биты', 'Все жанры'].includes(rawText)) return;
     if (!originals.has(node)) originals.set(node, node.nodeValue);
     const source = originals.get(node);
     const mapped = translate(source);
