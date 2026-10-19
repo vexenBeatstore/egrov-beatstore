@@ -35,6 +35,14 @@
   }
   function translate(source) {
     if (!source || !source.trim()) return source;
+    // Keep the catalog's "All beats" filter translatable even when its decorative glyph/spacing differs.
+    const trimmedSource = source.trim();
+    if (trimmedSource === 'Все биты' || trimmedSource === '◈ Все биты') {
+      if (config().lang === 'ru') return source;
+      const label = ({ en: 'All beats', de: 'Alle Beats', fr: 'Tous les beats', es: 'Todos los beats' })[config().lang] || 'All beats';
+      const translated = trimmedSource.startsWith('◈') ? `◈ ${label}` : label;
+      return source.replace(trimmedSource, translated);
+    }
     // Russian is the source language: never run it through the English bridge.
     if (config().lang === 'ru') return source;
     // First map Russian source strings to English keys, then localize those English strings.
