@@ -221,22 +221,36 @@ async function showOrder(){
 function openProfile(){showModal('adminModal');$('#authModalTitle').textContent=state.user?'Профиль':'Вход';$('#adminApp').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');loadTelegramLogin();checkAuth()} 
 function openAdmin(){showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');checkAdmin()}
 async function loadTelegramLogin(){
+  const target=$('#telegramLogin');
+  if(!target) return;
+  // Don't leave a stale "loaded" flag behind if the widget script fails.
+  if(target.dataset.loading==='1' || target.dataset.loaded==='1') return;
+  target.dataset.loading='1';
+  target.textContent='Загружаем вход через Telegram…';
   try{
     const c=await api('config');
-    state.botUsername=c.bot_username||state.botUsername;
-    const target=$('#telegramLogin');
-    if(target.dataset.loaded)return;
-    target.dataset.loaded='1';
+    const username=String(c.bot_username||state.botUsername||'').replace(/^@/,'').trim();
+    if(!username) throw new Error('Не задан username Telegram-бота (TELEGRAM_BOT_USERNAME).');
+    state.botUsername=username;
+    target.replaceChildren();
     const script=document.createElement('script');
     script.src='https://telegram.org/js/telegram-widget.js?22';
     script.async=true;
-    script.setAttribute('data-telegram-login',state.botUsername);
+    script.setAttribute('data-telegram-login',username);
     script.setAttribute('data-size','large');
     script.setAttribute('data-userpic','false');
     script.setAttribute('data-onauth','onTelegramAuth(user)');
     script.setAttribute('data-request-access','write');
+    script.onload=()=>{target.dataset.loaded='1';delete target.dataset.loading;};
+    script.onerror=()=>{
+      delete target.dataset.loading;
+      target.textContent='Не удалось загрузить кнопку Telegram. Проверь доступ к telegram.org и привязку домена к боту через @BotFather → /setdomain.';
+    };
     target.appendChild(script);
-  }catch(e){$('#telegramLogin').textContent=e.message}
+  }catch(e){
+    delete target.dataset.loading;
+    target.textContent='Ошибка входа через Telegram: '+(e.message||'не удалось загрузить настройки');
+  }
 }
 window.onTelegramAuth=async user=>{
   try{
