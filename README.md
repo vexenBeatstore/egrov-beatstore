@@ -96,9 +96,9 @@
 
 После деплоя зарегистрируй webhook через Telegram Bot API. В адресе ниже замени `BOT_TOKEN` на токен бота и `WEBHOOK_SECRET` на точно такое же значение, которое сохранил в Cloudflare в `TELEGRAM_WEBHOOK_SECRET` (не публикуй получившийся адрес):
 
-`https://api.telegram.org/botBOT_TOKEN/setWebhook?url=https%3A%2F%2Fegrov-beatstore.pages.dev%2Fapi%2Ftelegram%2Fwebhook&secret_token=WEBHOOK_SECRET`
+`https://api.telegram.org/botBOT_TOKEN/setWebhook?url=https%3A%2F%2Fegrovbeats.store%2Fapi%2Ftelegram%2Fwebhook&secret_token=WEBHOOK_SECRET`
 
-Открой собранный адрес в браузере. Telegram должен вернуть JSON с `"ok":true`. Если для сайта используется другой домен, замени `egrov-beatstore.pages.dev` на актуальный домен.
+Открой собранный адрес в браузере. Telegram должен вернуть JSON с `"ok":true`. Если для сайта используется другой домен, замени `egrovbeats.store` на актуальный домен.
 
 ### Проверка выдачи
 

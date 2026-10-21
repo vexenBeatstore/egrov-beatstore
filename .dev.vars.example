@@ -1,7 +1,7 @@
 # Copy to .dev.vars for local testing. Never commit the real .dev.vars file.
 BOT_TOKEN="123456:PASTE_REAL_BOT_TOKEN_HERE"
 ADMIN_TELEGRAM_ID="971616343"
-TELEGRAM_BOT_USERNAME="VEXENBeatStoreBot"
+TELEGRAM_BOT_USERNAME="egrovbeatsbot"
 BANK_DETAILS="УКАЖИТЕ РЕКВИЗИТЫ ДЛЯ ПЕРЕВОДА"
 PAYMENT_RECIPIENT="VEXEN"
 SITE_ORIGIN="http://localhost:8788"
