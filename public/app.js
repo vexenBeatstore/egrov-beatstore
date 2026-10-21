@@ -1,7 +1,7 @@
 
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { beats: [], cart: [], botUsername: "EGROVBeatStoreBot", admin: false, user: null, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null, favorites: [], favoriteQueue: [], favoriteQueueIndex: -1 };
+const state = { beats: [], cart: [], botUsername: "egrovbeatsbot", admin: false, user: null, orderToken: localStorage.getItem("vexen_order_token") || "", lastOrder: null, favorites: [], favoriteQueue: [], favoriteQueueIndex: -1 };
 const rub = n => new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(Number(n)||0);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function api(path, options={}) {
