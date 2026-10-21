@@ -276,6 +276,7 @@ async function handle(request, env) {
   // Safe additive order-delivery migration; existing orders and statuses are preserved.
   try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN delivery_method TEXT NOT NULL DEFAULT 'site'").run(); } catch (_) {}
   try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN telegram_chat_id TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
+  try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (telegram_id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT 'Пользователь', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run(); } catch (_) {}
 
   if (!env.DB) {
     return fail("Не настроена привязка D1 в Cloudflare.", 500);
@@ -378,8 +379,31 @@ async function handle(request, env) {
     const textValue = String(message?.text || "");
     const chatId = message?.chat?.id;
     const telegramUser = message?.from;
+    if (!chatId || !telegramUser?.id) return json({ ok: true });
+    if (/^\/start(?:\s+register)?$/i.test(textValue.trim()) && /register/i.test(textValue)) {
+      const telegramId = String(telegramUser.id);
+      let account = await env.DB.prepare("SELECT username FROM customer_accounts WHERE telegram_id=?").bind(telegramId).first();
+      if (account) {
+        await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Аккаунт уже зарегистрирован. Логин: ${account.username}\nЕсли пароль потерян, напиши администратору для сброса.` });
+        return json({ ok: true });
+      }
+      const username = `egrov${telegramId.slice(-5)}${crypto.getRandomValues(new Uint8Array(2)).reduce((n,b)=>n*256+b,0).toString(36).slice(0,3)}`.toLowerCase();
+      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+      const random = crypto.getRandomValues(new Uint8Array(16));
+      const password = Array.from(random, b => alphabet[b % alphabet.length]).join("");
+      const salt = randomToken().slice(0, 22);
+      const hash = Array.from(await sha256(`${salt}:${password}`), b => b.toString(16).padStart(2,"0")).join("");
+      try {
+        await env.DB.prepare("INSERT INTO customer_accounts (telegram_id,username,password_hash,password_salt,display_name) VALUES (?,?,?,?,?)").bind(telegramId, username, hash, salt, String(telegramUser.first_name || "Пользователь").slice(0,80)).run();
+      } catch (_) {
+        await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Не удалось создать аккаунт. Попробуй ещё раз через минуту." });
+        return json({ ok: true });
+      }
+      await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Добро пожаловать в EGROV BeatStore!\n\nТвои данные для входа на сайт:\nЛогин: ${username}\nПароль: ${password}\n\nСохрани их в надёжном месте. Никому не пересылай пароль. Войти также можно через кнопку Telegram на сайте.` });
+      return json({ ok: true });
+    }
     const match = textValue.match(/^\/start\s+([A-Za-z0-9_-]{20,64})$/);
-    if (!match || !chatId || !telegramUser?.id) return json({ ok: true });
+    if (!match) return json({ ok: true });
     const orderToken = match[1];
     const tokenHash = Array.from(await sha256(orderToken), b => b.toString(16).padStart(2, "0")).join("");
     const order = await env.DB.prepare("SELECT id,customer_telegram,delivery_method FROM orders WHERE access_token_hash=?").bind(tokenHash).first();
@@ -398,7 +422,24 @@ async function handle(request, env) {
     return json({ ok: true });
   }
 
-  /* ---------------- TELEGRAM ADMIN AUTH ---------------- */
+  /* ---------------- USERNAME / PASSWORD AUTH ---------------- */
+  if (path === "auth/password" && method === "POST") {
+    const data = await request.json().catch(() => null);
+    if (!data) return fail("Некорректный запрос.");
+    const username = String(data.username || "").trim().toLowerCase();
+    const password = String(data.password || "");
+    if (!/^[a-z0-9_]{5,32}$/.test(username) || password.length < 8 || password.length > 128) return fail("Проверь логин и пароль.", 401);
+    const account = await env.DB.prepare("SELECT telegram_id,username,password_hash,password_salt,display_name FROM customer_accounts WHERE username=? COLLATE NOCASE").bind(username).first();
+    const hash = account ? Array.from(await sha256(`${account.password_salt}:${password}`), b => b.toString(16).padStart(2,"0")).join("") : "";
+    if (!account || hash !== account.password_hash) return fail("Неверный логин или пароль.", 401);
+    const isAdmin = Boolean(env.ADMIN_TELEGRAM_ID) && account.telegram_id === String(env.ADMIN_TELEGRAM_ID);
+    const token = await makeSession(env, { id: account.telegram_id, first_name: account.display_name });
+    const secure = url.protocol === "https:" ? "Secure; " : "";
+    const setCookies = [`vexen_user=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=604800`, isAdmin ? `vexen_admin=${encodeURIComponent(token)}; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=604800` : `vexen_admin=; HttpOnly; ${secure}SameSite=Lax; Path=/; Max-Age=0`];
+    return json({ ok:true, name:account.display_name, is_admin:isAdmin }, 200, { "Set-Cookie": setCookies });
+  }
+
+  /* ---------------- TELEGRAM AUTH ---------------- */
 
   if (path === "auth/telegram" && method === "POST") {
     let data;

@@ -235,6 +235,7 @@ async function loadTelegramLogin(){
     const username=String(c.bot_username||state.botUsername||'').replace(/^@/,'').trim();
     if(!username) throw new Error('Не задан username Telegram-бота (TELEGRAM_BOT_USERNAME).');
     state.botUsername=username;
+    const registerLink=$('#registerTelegramLink');if(registerLink)registerLink.href=`https://t.me/${encodeURIComponent(username)}?start=register`;
     target.replaceChildren();
     const script=document.createElement('script');
     script.src='https://telegram.org/js/telegram-widget.js?22';
@@ -255,6 +256,7 @@ async function loadTelegramLogin(){
     target.textContent='Ошибка входа через Telegram: '+(e.message||'не удалось загрузить настройки');
   }
 }
+$('#passwordLoginForm')?.addEventListener('submit',async event=>{event.preventDefault();const status=$('#loginStatus');status.textContent='Входим…';try{await api('auth/password',{method:'POST',body:JSON.stringify({username:$('#accountUsername').value,password:$('#accountPassword').value})});await checkAuth();status.textContent='';}catch(e){status.textContent=e.message||'Не удалось войти';}});
 window.onTelegramAuth=async user=>{
   try{
     await api('auth/telegram',{method:'POST',body:JSON.stringify(user)});
