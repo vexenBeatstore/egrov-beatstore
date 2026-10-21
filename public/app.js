@@ -191,13 +191,16 @@ async function checkout(event){
   btn.disabled=true;
   btn.textContent='СОЗДАЁМ ЗАКАЗ...';
   try{
-    const order=await api('orders',{method:'POST',body:JSON.stringify({customer_name:$('#customerName').value,delivery_method:'site',items:items.map(i=>({beat_id:i.beat_id,license:i.license}))})});
+    const order=await api('orders',{method:'POST',body:JSON.stringify({customer_name:$('#customerName').value,customer_telegram:$('#customerTelegram').value,delivery_method:document.querySelector('input[name=deliveryMethod]:checked')?.value||'site',items:items.map(i=>({beat_id:i.beat_id,license:i.license}))})});
     state.orderToken=order.access_token;
     state.lastOrder=order;
     localStorage.setItem('vexen_order_token',order.access_token);
     $('#checkoutResult').classList.remove('hidden');
-    const paymentComment = `${order.code} ${items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', ')}`;
-    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. Получение файлов — <strong>только на сайте</strong>, после подтверждения поступления денег.</p><div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc(paymentComment)}</div><button class="copy-btn" id="copyComment">КОПИРОВАТЬ КОММЕНТАРИЙ</button><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью, включая номер заказа и выбранные лицензии.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. После подтверждения оплаты открой «Мой заказ» на сайте, чтобы скачать файлы.</p>`;
+    const deliveryMethod=document.querySelector('input[name=deliveryMethod]:checked')?.value||'site';
+    const paymentComment = `${deliveryMethod==='telegram'?$('#customerTelegram').value.trim()+' ':''}${order.code} ${items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', ')}`;
+    const botName=String(state.botUsername||'').replace(/^@/,'');
+    const telegramLink=deliveryMethod==='telegram'&&botName?`https://t.me/${encodeURIComponent(botName)}?start=${encodeURIComponent(order.access_token)}`:'';
+    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. Способ получения: <strong>${deliveryMethod==='telegram'?'Telegram':'на сайте'}</strong>${deliveryMethod==='telegram'?` · Telegram: <strong>${esc($('#customerTelegram').value)}</strong>`:''}.</p>${deliveryMethod==='telegram'?(telegramLink?`<p class="hint">Перед оплатой привяжи Telegram для автоматической выдачи файлов:</p><a class="copy-btn" href="${esc(telegramLink)}" target="_blank" rel="noopener noreferrer">ПРИВЯЗАТЬ TELEGRAM И НАЖАТЬ START</a><p class="hint">Открой бота именно с аккаунта <strong>${esc($('#customerTelegram').value)}</strong> и нажми START. После подтверждения оплаты файлы лицензий придут в этот чат.</p>`:`<p class="hint">Не удалось получить имя бота. Обнови страницу и повтори оформление или выбери получение на сайте.</p>`):''}<div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc(paymentComment)}</div><button class="copy-btn" id="copyComment">КОПИРОВАТЬ КОММЕНТАРИЙ</button><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью. В нём должны быть номер заказа и выбранная лицензия${deliveryMethod==='telegram'?', а для Telegram-выдачи — ещё username':''}.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. Не отправляй ключ посторонним. На этом устройстве статус можно открыть через «Мой заказ» внизу сайта.</p>`;
     $('#copyBank').onclick=()=>navigator.clipboard.writeText(order.bank_details).then(()=>toast('Реквизиты скопированы')).catch(()=>toast('Не удалось скопировать',true));
     $('#copyComment').onclick=()=>navigator.clipboard.writeText(paymentComment).then(()=>toast('Комментарий скопирован')).catch(()=>toast('Не удалось скопировать',true));
     $('#openOrder').onclick=()=>{hideModal('checkoutModal');showOrder()};
@@ -382,10 +385,10 @@ function switchAdminTab(tab){
 async function loadAdminOrders(){
   try{
     const d=await api('admin/orders');
-    $('#adminOrders').innerHTML=d.orders.length?'<div class="admin-orders-list">'+d.orders.map(o=>`<div class="admin-order"><div><strong>${esc(o.public_code)} · ${rub(o.total_amount)}</strong><small>${esc(o.customer_name)} ${esc(o.customer_telegram)} · ${esc(o.created_at)} · ${esc(o.status)}</small></div><div class="admin-actions">${o.status==='pending'?`<button class="small-btn" data-paid="${o.id}">Подтвердить оплату</button>`:''}${o.status==='delivered'?`<span class="hint">Файлы доступны покупателю</span>`:''}</div></div>`).join('')+'</div>':'<p class="hint">Заказов пока нет.</p>';
+    $('#adminOrders').innerHTML=d.orders.length?'<div class="admin-orders-list">'+d.orders.map(o=>`<div class="admin-order"><div><strong>${esc(o.public_code)} · ${rub(o.total_amount)}</strong><small>${esc(o.customer_name)} ${esc(o.customer_telegram)} · Выдача: ${o.delivery_method==='telegram'?'Telegram':'сайт'} · ${esc(o.created_at)} · ${esc(o.status)}</small></div><div class="admin-actions">${o.status==='pending'?`<button class="small-btn" data-paid="${o.id}">Подтвердить оплату</button>`:''}${o.status==='delivered'?`<span class="hint">${o.delivery_method==='telegram'?'Файлы отправлены в Telegram':'Файлы доступны на сайте'}</span>`:''}</div></div>`).join('')+'</div>':'<p class="hint">Заказов пока нет.</p>';
     $$('[data-paid]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Подтвердить, что деньги реально поступили?'))return;
-      try{const result=await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast('Оплата подтверждена · файлы доступны на сайте');loadAdminOrders();loadAdminBeats();loadCatalog()}
+      try{const result=await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast(result.method==='telegram'?'Оплата подтверждена · файлы отправлены в Telegram':'Оплата подтверждена · файлы доступны на сайте');loadAdminOrders();loadAdminBeats();loadCatalog()}
       catch(e){toast(e.message,true)}
     });
     $$('[data-delivered]').forEach(b=>b.onclick=async()=>{
@@ -442,7 +445,7 @@ $('#checkoutOpen').onclick=()=>{
   showModal('checkoutModal');
 };
 
-$('#checkoutForm').addEventListener('submit',checkout);
+document.querySelectorAll('input[name=deliveryMethod]').forEach(el=>el.addEventListener('change',()=>{const tg=document.querySelector('input[name=deliveryMethod]:checked')?.value==='telegram';$('#customerTelegramLabel').classList.toggle('hidden',!tg);$('#customerTelegram').required=tg;if(!tg)$('#customerTelegram').value='';})); $('#checkoutForm').addEventListener('submit',checkout);
 $('#profileOpen').onclick=openProfile;
 $('#adminPanelOpen').onclick=()=>{showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');if(state.admin){$('#adminApp').classList.remove('hidden');switchAdminTab('add');}else{checkAuth();}};
 $('#myOrderOpen').onclick=showOrder;
