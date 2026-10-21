@@ -276,6 +276,7 @@ async function handle(request, env) {
   // Safe additive order-delivery migration; existing orders and statuses are preserved.
   try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN delivery_method TEXT NOT NULL DEFAULT 'site'").run(); } catch (_) {}
   try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN telegram_chat_id TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
+  try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN admin_note TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
   try { await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (telegram_id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT 'Пользователь', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run(); } catch (_) {}
 
   if (!env.DB) {
@@ -375,6 +376,60 @@ async function handle(request, env) {
     const expectedSecret = String(env.TELEGRAM_WEBHOOK_SECRET || "").trim();
     if (!expectedSecret || request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== expectedSecret) return fail("Webhook не авторизован.", 401);
     const update = await request.json().catch(() => ({}));
+
+    // Admin order buttons: the bot is used for notifications and confirmation only;
+    // customer files are never sent through Telegram.
+    const callback = update.callback_query;
+    if (callback) {
+      const callbackId = callback.id;
+      const adminId = String(env.ADMIN_TELEGRAM_ID || "");
+      const callbackUserId = String(callback.from?.id || "");
+      const match = String(callback.data || "").match(/^egrov_order:(paid|unpaid):(\d+)$/);
+      if (!adminId || callbackUserId !== adminId || !match) {
+        try { await telegramApi(env, "answerCallbackQuery", { callback_query_id: callbackId, text: "Нет доступа к этому действию.", show_alert: true }); } catch (_) {}
+        return json({ ok: true });
+      }
+      const action = match[1];
+      const orderId = Number(match[2]);
+      const order = await env.DB.prepare("SELECT id,public_code,status,total_amount,customer_name FROM orders WHERE id=?").bind(orderId).first();
+      if (!order) {
+        try { await telegramApi(env, "answerCallbackQuery", { callback_query_id: callbackId, text: "Заказ не найден.", show_alert: true }); } catch (_) {}
+        return json({ ok: true });
+      }
+      if (action === "unpaid") {
+        if (order.status === "pending") {
+          try { await env.DB.prepare("UPDATE orders SET admin_note='Оплата не поступила' WHERE id=? AND status='pending'").bind(orderId).run(); } catch (error) { console.error("Could not record unpaid order note", error); }
+        }
+        try { await telegramApi(env, "answerCallbackQuery", { callback_query_id: callbackId, text: "Заказ оставлен ожидающим оплаты." }); } catch (_) {}
+        const oldText = String(callback.message?.text || "");
+        const note = `\n\n⚠️ Оплата пока не подтверждена. Заказ оставлен ожидающим оплаты. Если перевод поступит позже, нажми «Деньги пришли, отправить товар».`;
+        try {
+          await telegramApi(env, "editMessageText", {
+            chat_id: callback.message.chat.id,
+            message_id: callback.message.message_id,
+            text: oldText.includes("Оплата пока не подтверждена") ? oldText : oldText + note,
+            reply_markup: { inline_keyboard: [[
+              { text: "Деньги пришли, отправить товар", callback_data: `egrov_order:paid:${orderId}` }
+            ], [
+              { text: "Оплата не поступила", callback_data: `egrov_order:unpaid:${orderId}` }
+            ]] }
+          });
+        } catch (error) { console.error("Telegram unpaid callback update failed", error); }
+        return json({ ok: true });
+      }
+      if (order.status === "pending") {
+        await env.DB.prepare("UPDATE orders SET status='delivered',admin_note='',paid_at=COALESCE(paid_at,CURRENT_TIMESTAMP),delivered_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'").bind(orderId).run();
+        const { results: beatRows = [] } = await env.DB.prepare("SELECT DISTINCT beat_id FROM order_items WHERE order_id=?").bind(orderId).all();
+        for (const item of beatRows) await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?").bind(item.beat_id).run();
+      }
+      try { await telegramApi(env, "answerCallbackQuery", { callback_query_id: callbackId, text: "Оплата подтверждена. Файлы доступны покупателю на сайте." }); } catch (_) {}
+      const { results: orderItems = [] } = await env.DB.prepare("SELECT beat_title,license,price FROM order_items WHERE order_id=? ORDER BY id").bind(orderId).all();
+      const paidText = `✅ ОПЛАТА ПОДТВЕРЖДЕНА\nЗаказ ${order.public_code} · ${order.total_amount} ₽\nПокупатель: ${order.customer_name}\n\nФайлы доступны покупателю только на сайте в разделе «Мой заказ».\n${orderItems.map(item => `• ${item.beat_title} — ${String(item.license).toUpperCase()} (${item.price} ₽)`).join("\n")}`;
+      try { await telegramApi(env, "editMessageText", { chat_id: callback.message.chat.id, message_id: callback.message.message_id, text: paidText, reply_markup: { inline_keyboard: [] } }); }
+      catch (error) { console.error("Telegram paid callback update failed", error); }
+      return json({ ok: true });
+    }
+
     const message = update.message;
     const textValue = String(message?.text || "");
     const chatId = message?.chat?.id;
@@ -402,23 +457,9 @@ async function handle(request, env) {
       await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Добро пожаловать в EGROV BeatStore!\n\nТвои данные для входа на сайт:\nЛогин: ${username}\nПароль: ${password}\n\nСохрани их в надёжном месте. Никому не пересылай пароль. Войти также можно через кнопку Telegram на сайте.` });
       return json({ ok: true });
     }
-    const match = textValue.match(/^\/start\s+([A-Za-z0-9_-]{20,64})$/);
-    if (!match) return json({ ok: true });
-    const orderToken = match[1];
-    const tokenHash = Array.from(await sha256(orderToken), b => b.toString(16).padStart(2, "0")).join("");
-    const order = await env.DB.prepare("SELECT id,customer_telegram,delivery_method FROM orders WHERE access_token_hash=?").bind(tokenHash).first();
-    if (!order || order.delivery_method !== "telegram") {
-      await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Не удалось связать заказ. Открой ссылку привязки из страницы оформления заказа и попробуй снова." });
-      return json({ ok: true });
+    if (/^\/start\s+[A-Za-z0-9_-]{20,64}$/i.test(textValue.trim())) {
+      await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Получение файлов через Telegram отключено. После подтверждения оплаты открой сайт EGROV BeatStore → «Мой заказ», чтобы скачать покупку." });
     }
-    const expectedUsername = String(order.customer_telegram || "").replace(/^@/, "").toLowerCase();
-    const actualUsername = String(telegramUser.username || "").toLowerCase();
-    if (!expectedUsername || !actualUsername || expectedUsername !== actualUsername) {
-      await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Имя пользователя не совпало с заказом. В заказе указан @${expectedUsername || "не указан"}. Запусти бота с аккаунта, у которого этот username.` });
-      return json({ ok: true });
-    }
-    await env.DB.prepare("UPDATE orders SET telegram_chat_id=? WHERE id=?").bind(String(chatId), order.id).run();
-    await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Telegram привязан к заказу. После подтверждения оплаты администратором бот автоматически отправит сюда купленные файлы." });
     return json({ ok: true });
   }
 
@@ -680,18 +721,13 @@ async function handle(request, env) {
     }
 
     const name = String(data.customer_name || "").trim().slice(0, 100);
-    const deliveryMethod = data.delivery_method === "telegram" ? "telegram" : "site";
-    const telegram = String(data.customer_telegram || "").trim().slice(0, 80);
+    // File delivery is site-only. Telegram is used only for admin purchase notifications.
+    const deliveryMethod = "site";
     const items = Array.isArray(data.items) ? data.items : [];
 
     if (name.length < 2 || !items.length || items.length > 20) {
       return fail("Укажите имя и добавьте в корзину хотя бы один бит.");
     }
-    if (deliveryMethod === "telegram" && !/^@[A-Za-z0-9_]{5,32}$/.test(telegram)) {
-      return fail("Для выдачи в Telegram укажи корректный username в формате @username.");
-    }
-    if (deliveryMethod === "site") { /* Telegram is optional for website delivery. */ }
-
     const resolved = [];
     let total = 0;
 
@@ -731,7 +767,7 @@ async function handle(request, env) {
        (public_code,access_token_hash,customer_name,customer_telegram,total_amount,status,delivery_method)
        VALUES (?,?,?,?,?,'pending',?)`
     )
-      .bind(code, tokenHash, name, deliveryMethod === "telegram" ? telegram : "", total, deliveryMethod)
+      .bind(code, tokenHash, name, "", total, deliveryMethod)
       .run();
 
     const orderId = result.meta.last_row_id;
@@ -751,6 +787,29 @@ async function handle(request, env) {
           item.file_key
         )
         .run();
+    }
+
+    // Notify the store owner in Telegram. This notification never sends files to the buyer.
+    try {
+      const adminChatId = String(env.ADMIN_TELEGRAM_ID || "").trim();
+      if (adminChatId && getTelegramBotToken(env)) {
+        const itemLines = resolved.map(item => `• ${item.beat.title} — ${String(item.license).toUpperCase()} (${item.price} ₽)`).join("\n");
+        const notice = `🛒 НОВЫЙ ЗАКАЗ EGROV BEATSTORE\n\nЗаказ: ${code}\nСумма: ${total} ₽\nПокупатель: ${name}\n\nТовары:\n${itemLines}\n\nПроверь поступление денег вручную. До подтверждения файлы на сайте недоступны.`;
+        await telegramApi(env, "sendMessage", {
+          chat_id: adminChatId,
+          text: notice,
+          reply_markup: { inline_keyboard: [[
+            { text: "Деньги пришли, отправить товар", callback_data: `egrov_order:paid:${orderId}` }
+          ], [
+            { text: "Оплата не поступила", callback_data: `egrov_order:unpaid:${orderId}` }
+          ]] }
+        });
+      } else {
+        console.error("Order notification skipped: ADMIN_TELEGRAM_ID or bot token is not configured.");
+      }
+    } catch (error) {
+      // Order creation must still succeed if Telegram is temporarily unavailable.
+      console.error("Admin Telegram order notification failed:", error);
     }
 
     return json({
@@ -1101,37 +1160,14 @@ async function handle(request, env) {
 
   if (paidMatch && method === "POST") {
     const id = Number(paidMatch[1]);
-    const order = await env.DB.prepare("SELECT id,status,delivery_method,telegram_chat_id,public_code FROM orders WHERE id=?").bind(id).first();
+    const order = await env.DB.prepare("SELECT id,status,public_code FROM orders WHERE id=?").bind(id).first();
     if (!order) return fail("Заказ не найден.", 404);
-    if (order.status === "delivered") return json({ ok: true, already_delivered: true });
+    if (["paid", "delivered"].includes(order.status)) return json({ ok: true, already_delivered: true, method: "site" });
+    if (order.status !== "pending") return fail("Этот заказ уже не ожидает оплаты.", 409);
 
-    if (order.delivery_method === "telegram") {
-      if (!order.telegram_chat_id) return fail("Покупатель ещё не привязал Telegram. Попроси его открыть ссылку «Получать в Telegram» в заказе и нажать START у бота, затем подтверди оплату повторно.", 409);
-      const { results: items = [] } = await env.DB.prepare("SELECT beat_id,beat_title,license,file_key FROM order_items WHERE order_id=? ORDER BY id").bind(id).all();
-      if (!items.length) return fail("В заказе нет товаров.", 409);
-      for (const item of items) {
-        if (!item.file_key) return fail(`У товара «${item.beat_title}» не прикреплён файл лицензии ${item.license}.`, 409);
-        const file = await storageGet(item.file_key, env);
-        if (!file) return fail(`Файл «${item.beat_title}» не найден в хранилище.`, 409);
-        const bytes = await file.arrayBuffer();
-        const form = new FormData();
-        form.set("chat_id", String(order.telegram_chat_id));
-        form.set("caption", `${item.beat_title} — лицензия ${String(item.license).toUpperCase()}\nЗаказ ${order.public_code} · EGROV BeatStore`);
-        form.set("document", new Blob([bytes], { type: item.license === "wav" ? "audio/wav" : item.license === "stems" ? "application/zip" : "audio/mpeg" }), telegramFileName(item));
-        try { await telegramApi(env, "sendDocument", form); }
-        catch (error) { console.error("Telegram delivery failed", error); return fail(`Не удалось отправить «${item.beat_title}» в Telegram. Проверь доступность бота и лимит размера файла. ${String(error.message || "").slice(0,180)}`, 502); }
-      }
-      await env.DB.prepare("UPDATE orders SET status='delivered',paid_at=COALESCE(paid_at,CURRENT_TIMESTAMP),delivered_at=CURRENT_TIMESTAMP WHERE id=?").bind(id).run();
-      const { results: beatRows = [] } = await env.DB.prepare("SELECT DISTINCT beat_id FROM order_items WHERE order_id=?").bind(id).all();
-      for (const item of beatRows) await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?").bind(item.beat_id).run();
-      return json({ ok: true, delivered: true, method: "telegram" });
-    }
-
-    if (order.status === "pending") {
-      await env.DB.prepare("UPDATE orders SET status='delivered',paid_at=CURRENT_TIMESTAMP,delivered_at=CURRENT_TIMESTAMP WHERE id=?").bind(id).run();
-      const { results: items = [] } = await env.DB.prepare("SELECT DISTINCT beat_id FROM order_items WHERE order_id=?").bind(id).all();
-      for (const item of items) await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?").bind(item.beat_id).run();
-    }
+    await env.DB.prepare("UPDATE orders SET status='delivered',admin_note='',paid_at=CURRENT_TIMESTAMP,delivered_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'").bind(id).run();
+    const { results: beatRows = [] } = await env.DB.prepare("SELECT DISTINCT beat_id FROM order_items WHERE order_id=?").bind(id).all();
+    for (const item of beatRows) await env.DB.prepare("UPDATE beats SET active=0 WHERE id=?").bind(item.beat_id).run();
     return json({ ok: true, delivered: false, method: "site" });
   }
 
