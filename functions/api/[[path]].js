@@ -484,11 +484,31 @@ async function handle(request, env) {
       await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Telegram привязан к заказу. После подтверждения оплаты администратором бот отправит сюда файлы лицензий." });
       return json({ ok: true });
     }
+    const passwordKeyboard = { keyboard: [[{ text: "Забыл пароль" }]], resize_keyboard: true, is_persistent: true, input_field_placeholder: "Сообщение…" };
+
+    // Password recovery is only available to the Telegram account that owns the site account.
+    if (textValue.trim().toLowerCase() === "забыл пароль" || textValue.trim().toLowerCase() === "задать пароль") {
+      const telegramId = String(telegramUser.id);
+      const account = await env.DB.prepare("SELECT username FROM customer_accounts WHERE telegram_id=?").bind(telegramId).first();
+      if (!account) {
+        await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Аккаунт ещё не зарегистрирован. Нажми /start — я создам его и пришлю данные для входа.", reply_markup: passwordKeyboard });
+        return json({ ok: true });
+      }
+      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+      const random = crypto.getRandomValues(new Uint8Array(16));
+      const password = Array.from(random, b => alphabet[b % alphabet.length]).join("");
+      const salt = randomToken().slice(0, 22);
+      const hash = Array.from(await sha256(`${salt}:${password}`), b => b.toString(16).padStart(2,"0")).join("");
+      await env.DB.prepare("UPDATE customer_accounts SET password_hash=?,password_salt=? WHERE telegram_id=?").bind(hash, salt, telegramId).run();
+      await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Пароль обновлён для аккаунта EGROV BeatStore.\n\nЛогин: ${account.username}\nНовый пароль: ${password}\n\nСтарый пароль больше не действует. Сохрани новый пароль в надёжном месте.`, reply_markup: passwordKeyboard });
+      return json({ ok: true });
+    }
+
     if (/^\/start(?:\s+register)?$/i.test(textValue.trim())) {
       const telegramId = String(telegramUser.id);
       let account = await env.DB.prepare("SELECT username FROM customer_accounts WHERE telegram_id=?").bind(telegramId).first();
       if (account) {
-        await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Аккаунт уже зарегистрирован. Логин: ${account.username}\nЕсли пароль потерян, напиши администратору для сброса.` });
+        await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Аккаунт уже зарегистрирован.\nЛогин: ${account.username}\n\nЕсли забыл пароль, нажми кнопку «Забыл пароль» под полем сообщения — я создам новый и обновлю его в базе сайта.`, reply_markup: passwordKeyboard });
         return json({ ok: true });
       }
       const username = `egrov${telegramId.slice(-5)}${crypto.getRandomValues(new Uint8Array(2)).reduce((n,b)=>n*256+b,0).toString(36).slice(0,3)}`.toLowerCase();
@@ -500,10 +520,10 @@ async function handle(request, env) {
       try {
         await env.DB.prepare("INSERT INTO customer_accounts (telegram_id,username,password_hash,password_salt,display_name) VALUES (?,?,?,?,?)").bind(telegramId, username, hash, salt, String(telegramUser.first_name || "Пользователь").slice(0,80)).run();
       } catch (_) {
-        await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Не удалось создать аккаунт. Попробуй ещё раз через минуту." });
+        await telegramApi(env, "sendMessage", { chat_id: chatId, text: "Не удалось создать аккаунт. Попробуй ещё раз через минуту.", reply_markup: passwordKeyboard });
         return json({ ok: true });
       }
-      await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Добро пожаловать в EGROV BeatStore!\n\nТвои данные для входа на сайт:\nЛогин: ${username}\nПароль: ${password}\n\nСохрани их в надёжном месте. Никому не пересылай пароль. Войти также можно через кнопку Telegram на сайте.` });
+      await telegramApi(env, "sendMessage", { chat_id: chatId, text: `Добро пожаловать в EGROV BeatStore!\n\nТвои данные для входа на сайт:\nЛогин: ${username}\nПароль: ${password}\n\nСохрани их в надёжном месте. Никому не пересылай пароль. Войти также можно через кнопку Telegram на сайте.\n\nЕсли забудешь пароль, нажми кнопку «Забыл пароль» под полем сообщения.`, reply_markup: passwordKeyboard });
       return json({ ok: true });
     }
     return json({ ok: true });
