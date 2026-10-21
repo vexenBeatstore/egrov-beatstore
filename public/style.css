@@ -956,3 +956,96 @@ section[id] { scroll-margin-top: 112px; }
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+/* EGROV BeatStore — premium monochrome refresh (uploaded photos remain untouched) */
+:root{
+  --bg:#050505;
+  --panel:#0b0b0b;
+  --panel2:#151515;
+  --line:#303030;
+  --text:#f7f7f7;
+  --muted:#a8a8a8;
+  --acid:#ffffff;
+  --acid2:#c9c9c9;
+  --danger:#8d8d8d;
+  --radius:14px;
+}
+body{background:var(--bg);color:var(--text)}
+.topbar{background:rgba(5,5,5,.94);border-bottom-color:#ffffff14}
+nav{color:#bdbdbd}
+nav a:hover,.text-btn:hover,.nav-link-btn:hover{color:#fff}
+.nav-link-btn,.nav-admin{color:#c8c8c8}
+.nav-admin{border-color:#ffffff50;color:#fff}
+.nav-admin:hover{background:#fff;color:#050505}
+.cart-btn{background:#111;border-color:#303030;color:#fff}
+.cart-btn span{background:#fff;color:#050505}
+.hero{border-bottom-color:#ffffff14}
+.eyebrow,.brand small,.cover-id,.player-label{color:#fff}
+.hero h1 em,.section-head h2 em,.about-section h2 em{color:#fff}
+.hero-text,.about-section p{color:#b8b8b8}
+.primary-btn{background:#fff;color:#050505;border:1px solid #fff}
+.primary-btn:hover{background:#dcdcdc;color:#050505}
+.hero-meta{color:#858585}
+/* Keep all uploaded artwork and photography in its original color and tone. */
+img,.cover img,.track-thumb img,.brand-logo,.hero-logo{filter:none!important;mix-blend-mode:normal}
+.hero-art{background-color:#050505;border-color:#ffffff18}
+.hero-art:before,.hero-art:after{background:none!important}
+.hero-art .art-tag{color:#fff;background:#05050555}
+.catalog-tools input,.catalog-tools select,.sort-control select,
+.modal-card input,.modal-card select,.modal-card textarea,
+.admin-form input,.admin-form select,.admin-form textarea{
+  background:#0b0b0b;color:#f7f7f7;border-color:#333
+}
+.catalog-tools input:focus,.catalog-tools select:focus,input:focus,textarea:focus,
+.admin-form input:focus,.admin-form textarea:focus,.modal-card input:focus{
+  border-color:#d0d0d0;box-shadow:0 0 0 3px #ffffff0b
+}
+.beat-card{background:#0b0b0b;border-color:#ffffff18}
+.beat-card:hover{background:#101010;border-color:#ffffff65}
+.cover{background:#101010}
+.cover-mark{color:#ffffff38}
+.cover-genre{background:#050505d9;color:#fff}
+.discount-badge{background:#1b1b1b;color:#fff}
+.beat-meta{color:#b8b8b8}
+.beat-meta span{border-color:#555}
+.audio-player{background:#111;border-color:#303030}
+.player-play{background:#fff;color:#050505;box-shadow:0 0 0 4px #ffffff0c}
+.player-play:hover{background:#dedede}
+.player-label{color:#fff}
+.player-time,.volume-wrap{color:#b8b8b8}
+.player-status{color:#888}
+.player-seek,.player-volume{accent-color:#fff}
+.audio-player.is-playing{border-color:#ffffff70;box-shadow:inset 0 0 25px #ffffff05}
+.license-row select{background:#070707;border-color:#333;color:#ddd}
+.add-btn{border-color:#666;color:#fff}
+.add-btn:hover{background:#fff;border-color:#fff;color:#050505}
+.about-section{background:#050505;border-top-color:#ffffff14}
+footer{border-top-color:#ffffff14;color:#888}
+.text-btn{color:#b8b8b8}
+.drawer-backdrop,.modal-backdrop{background:#000c}
+.drawer-panel{background:#070707;border-left-color:#303030}
+.drawer-head{border-bottom-color:#303030}
+.icon-btn{background:#111;color:#fff;border-color:#333}
+.cart-item{border-bottom-color:#292929}
+.cart-item select{background:#080808;color:#fff;border-color:#333}
+.remove-btn{color:#bbb}
+.admin-card{background:linear-gradient(150deg,#111 0%,#050505 75%);border-color:#ffffff20}
+.admin-tabs{background:#070707;border-color:#303030}
+.admin-tabs .tab{color:#bbb}
+.admin-tabs .tab.active{background:#fff;color:#050505;box-shadow:0 5px 18px #ffffff0d}
+.upload-panel{background:linear-gradient(135deg,#151515,#070707);border-color:#333}
+.upload-icon{background:#111;border-color:#555;color:#fff}
+.upload-heading strong,.upload-heading small,.admin-form label,.modal-card label{color:#c9c9c9}
+.upload-dropzone{background:#080808;border-color:#555}
+.upload-dropzone:hover{background-color:#111}
+.upload-symbol{border-color:#555;color:#fff}
+.admin-beat,.admin-order{background:linear-gradient(110deg,#151515,#080808);border-color:#303030}
+.admin-beat:hover,.admin-order:hover{border-color:#777}
+.admin-beat small,.admin-order small{color:#b8b8b8}
+.small-btn{background:#111;color:#eee;border-color:#555}
+.small-btn:hover{background:#1b1b1b}
+.small-btn.danger{background:#111;color:#ccc;border-color:#555}
+.small-btn.relist-btn{background:#fff;border-color:#fff;color:#050505}
+.modal-card{background:#101010;border-color:#ffffff20}
+.empty{border-color:#383838}
+::selection{background:#fff;color:#050505}
