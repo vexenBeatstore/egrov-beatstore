@@ -380,7 +380,7 @@ async function handle(request, env) {
     const chatId = message?.chat?.id;
     const telegramUser = message?.from;
     if (!chatId || !telegramUser?.id) return json({ ok: true });
-    if (/^\/start(?:\s+register)?$/i.test(textValue.trim()) && /register/i.test(textValue)) {
+    if (/^\/start(?:\s+register)?$/i.test(textValue.trim())) {
       const telegramId = String(telegramUser.id);
       let account = await env.DB.prepare("SELECT username FROM customer_accounts WHERE telegram_id=?").bind(telegramId).first();
       if (account) {
