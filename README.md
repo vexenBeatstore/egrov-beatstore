@@ -19,7 +19,7 @@
 7. В настройках проекта задайте переменные/секреты из раздела **Environment variables** ниже и выполните повторное развёртывание.
 
 ## Переменные и секреты
-Сверьтесь с обращениями `env.` в `functions/api/[[path]].js`. Обычно нужны: `ADMIN_TELEGRAM_ID`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_BOT_TOKEN` для проверки авторизации, `BANK_RECIPIENT` и `BANK_DETAILS`. Добавляйте секреты через Cloudflare Dashboard, а не в исходный код.
+Сверьтесь с обращениями `env.` в `functions/api/[[path]].js`. Обычно нужны: `ADMIN_TELEGRAM_ID`, `BOT_TOKEN` (токен бота), `TELEGRAM_BOT_USERNAME` (username этого же бота), `BANK_RECIPIENT` и `BANK_DETAILS`. Добавляйте секреты через Cloudflare Dashboard, а не в исходный код.
 
 ## Локальные настройки
 Файл `.dev.vars.example` — пример локальных переменных. Не публикуйте реальный `.dev.vars`.

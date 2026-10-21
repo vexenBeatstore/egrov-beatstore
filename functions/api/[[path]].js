@@ -11,6 +11,13 @@ const json = (data, status = 200, extraHeaders = {}) => {
 const fail = (message, status = 400) => json({ error: message }, status);
 const enc = new TextEncoder();
 
+// Accept both documented secret names and values copied with surrounding quotes.
+function getTelegramBotToken(env) {
+  return String(env.BOT_TOKEN || env.TELEGRAM_BOT_TOKEN || "")
+    .trim()
+    .replace(/^(["'])(.*)\1$/, "$2");
+}
+
 const b64url = (bytes) =>
   btoa(String.fromCharCode(...new Uint8Array(bytes)))
     .replace(/\+/g, "-")
@@ -328,11 +335,23 @@ async function handle(request, env) {
   }
 
   if (path === "config" && method === "GET") {
-    return json({
-      bot_username: String(
-        env.TELEGRAM_BOT_USERNAME || "EGROVBeatStoreBot"
-      ).replace(/^@/, ""),
-    });
+    const configuredUsername = String(env.TELEGRAM_BOT_USERNAME || "")
+      .trim().replace(/^@/, "");
+    const botToken = getTelegramBotToken(env);
+    // Prefer the username belonging to the actual token. This prevents the
+    // widget silently opening for a different hard-coded/default bot.
+    if (botToken) {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const result = await response.json();
+        if (response.ok && result.ok && result.result?.username) {
+          return json({ bot_username: result.result.username });
+        }
+      } catch (error) {
+        console.error("Telegram getMe failed while loading config");
+      }
+    }
+    return json({ bot_username: configuredUsername, bot_configured: Boolean(botToken) });
   }
 
   /* ---------------- TELEGRAM ADMIN AUTH ---------------- */
@@ -346,8 +365,9 @@ async function handle(request, env) {
       return fail("Некорректный JSON");
     }
 
-    if (!env.BOT_TOKEN || !env.SESSION_SECRET) {
-      return fail("Секреты авторизации не настроены в Cloudflare.", 500);
+    const botToken = getTelegramBotToken(env);
+    if (!botToken || !env.SESSION_SECRET) {
+      return fail("Не настроены BOT_TOKEN (или TELEGRAM_BOT_TOKEN) и/или SESSION_SECRET в Cloudflare.", 500);
     }
 
     const id = String(data.id || "");
@@ -373,7 +393,8 @@ async function handle(request, env) {
       .map((k) => `${k}=${data[k]}`)
       .join("\n");
 
-    const secret = await sha256(env.BOT_TOKEN);
+    // Trim accidental whitespace from a Cloudflare secret pasted with a newline.
+    const secret = await sha256(botToken);
 
     const key = await crypto.subtle.importKey(
       "raw",
@@ -404,7 +425,21 @@ async function handle(request, env) {
     }
 
     if (diff !== 0) {
-      return fail("Не удалось проверить подпись Telegram.", 401);
+      // Diagnose the most common deployment mistake without ever exposing the token.
+      try {
+        const meResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const me = await meResponse.json();
+        const configuredUsername = String(env.TELEGRAM_BOT_USERNAME || "").replace(/^@/, "").trim();
+        if (!meResponse.ok || !me.ok || !me.result?.username) {
+          return fail("Подпись не совпала, а Cloudflare не смог проверить BOT_TOKEN через Telegram. Проверьте, что BOT_TOKEN — полный актуальный токен из @BotFather.", 401);
+        }
+        if (configuredUsername && me.result.username.toLowerCase() !== configuredUsername.toLowerCase()) {
+          return fail(`Подпись не совпала: BOT_TOKEN принадлежит боту @${me.result.username}, а TELEGRAM_BOT_USERNAME указан как @${configuredUsername}. Укажите имя и токен одного и того же бота.`, 401);
+        }
+      } catch {
+        // Keep the original safe error if Telegram's API cannot be reached.
+      }
+      return fail("Не удалось проверить подпись Telegram. Токен и имя бота удалось проверить (или Telegram API недоступен), но подпись данных не совпала. Убедитесь, что виджет открыт для этого же бота и после изменения секретов выполнен новый deploy.", 401);
     }
 
     const token = await makeSession(env, {
