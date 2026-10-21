@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS orders (
   access_token_hash TEXT NOT NULL,
   customer_name TEXT NOT NULL,
   customer_telegram TEXT NOT NULL DEFAULT '',
+  delivery_method TEXT NOT NULL DEFAULT 'site',
+  telegram_chat_id TEXT NOT NULL DEFAULT '',
   total_amount INTEGER NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
   receipt_key TEXT,

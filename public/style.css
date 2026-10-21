@@ -1049,3 +1049,10 @@ footer{border-top-color:#ffffff14;color:#888}
 .modal-card{background:#101010;border-color:#ffffff20}
 .empty{border-color:#383838}
 ::selection{background:#fff;color:#050505}
+
+/* Checkout delivery method selector */
+.delivery-choice{border:1px solid var(--line,#333);padding:14px;border-radius:10px;margin:14px 0;background:rgba(255,255,255,.02)}
+.delivery-choice legend{padding:0 7px;color:var(--text,#fff);font-size:.82rem;letter-spacing:.04em}
+.delivery-option{display:flex;align-items:flex-start;gap:10px;padding:10px 2px;cursor:pointer}
+.delivery-option input{margin-top:4px;accent-color:#fff}
+.delivery-option small{display:block;color:var(--muted,#999);font-size:.78rem;margin-top:4px}

@@ -191,13 +191,14 @@ async function checkout(event){
   btn.disabled=true;
   btn.textContent='СОЗДАЁМ ЗАКАЗ...';
   try{
-    const order=await api('orders',{method:'POST',body:JSON.stringify({customer_name:$('#customerName').value,customer_telegram:$('#customerTelegram').value,items:items.map(i=>({beat_id:i.beat_id,license:i.license}))})});
+    const order=await api('orders',{method:'POST',body:JSON.stringify({customer_name:$('#customerName').value,customer_telegram:$('#customerTelegram').value,delivery_method:document.querySelector('input[name=deliveryMethod]:checked')?.value||'site',items:items.map(i=>({beat_id:i.beat_id,license:i.license}))})});
     state.orderToken=order.access_token;
     state.lastOrder=order;
     localStorage.setItem('vexen_order_token',order.access_token);
     $('#checkoutResult').classList.remove('hidden');
-    const paymentComment = `${$('#customerTelegram').value.trim()} ${order.code} ${items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', ')}`;
-    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. После проверки оплаты полные файлы будут отправлены вручную в Telegram: <strong>${esc($('#customerTelegram').value)}</strong>.</p><div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc(paymentComment)}</div><button class="copy-btn" id="copyComment">КОПИРОВАТЬ КОММЕНТАРИЙ</button><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью. В нём должны быть твой Telegram, номер заказа и выбранная лицензия.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. Не отправляй ключ посторонним. На этом устройстве статус можно открыть через «Мой заказ» внизу сайта.</p>`;
+    const deliveryMethod=document.querySelector('input[name=deliveryMethod]:checked')?.value||'site';
+    const paymentComment = `${deliveryMethod==='telegram'?$('#customerTelegram').value.trim()+' ':''}${order.code} ${items.map(i=>({mp3:'MP3',wav:'WAV',stems:'STEMS'})[i.license]).join(', ')}`;
+    $('#checkoutResult').innerHTML=`<div class="order-status">ЗАКАЗ ${esc(order.code)} · ОЖИДАЕТ ОПЛАТЫ</div><p class="hint">Переведи <strong>${rub(order.total)}</strong> получателю <strong>Ярослав</strong>. После подтверждения оплаты файлы появятся в разделе «Мой заказ» для скачивания. Способ получения: <strong>${deliveryMethod==='telegram'?'Telegram':'на сайте'}</strong>${deliveryMethod==='telegram'?` · Telegram: <strong>${esc($('#customerTelegram').value)}</strong>`:''}.</p><div class="pay-box">${esc(order.bank_details)}\n\nКомментарий к переводу (обязательно):\n${esc(paymentComment)}</div><button class="copy-btn" id="copyComment">КОПИРОВАТЬ КОММЕНТАРИЙ</button><p class="hint"><strong>Важно:</strong> скопируй комментарий полностью. В нём должны быть номер заказа и выбранная лицензия${deliveryMethod==='telegram'?', а для Telegram-выдачи — ещё username':''}.</p><button class="copy-btn" id="copyBank">КОПИРОВАТЬ РЕКВИЗИТЫ</button> <button class="copy-btn" id="openOrder">ОТКРЫТЬ СТАТУС ЗАКАЗА</button> <button class="copy-btn" id="copyOrderToken">КОПИРОВАТЬ КЛЮЧ ДОСТУПА</button><p class="hint">Сохрани код заказа ${esc(order.code)} и ключ доступа отдельно. Не отправляй ключ посторонним. На этом устройстве статус можно открыть через «Мой заказ» внизу сайта.</p>`;
     $('#copyBank').onclick=()=>navigator.clipboard.writeText(order.bank_details).then(()=>toast('Реквизиты скопированы')).catch(()=>toast('Не удалось скопировать',true));
     $('#copyComment').onclick=()=>navigator.clipboard.writeText(paymentComment).then(()=>toast('Комментарий скопирован')).catch(()=>toast('Не удалось скопировать',true));
     $('#openOrder').onclick=()=>{hideModal('checkoutModal');showOrder()};
@@ -213,8 +214,8 @@ async function showOrder(){
   if(!state.orderToken){toast('На этом устройстве ещё нет сохранённого заказа',true);return}
   try{
     const d=await api('orders/lookup',{method:'POST',body:JSON.stringify({access_token:state.orderToken})});
-    const status=({pending:'Ожидает оплаты',paid:'Оплата подтверждена · готовится отправка',delivered:'Файлы отправлены в Telegram'})[d.order.status]||d.order.status;
-    $('#orderDetails').innerHTML=`<div class="order-status">${esc(status)}</div><p class="hint">Заказ ${esc(d.order.public_code)} · ${rub(d.order.total_amount)}<br>Telegram: <strong>${esc(d.order.customer_telegram||'не указан')}</strong></p>${d.items.map(i=>`<div class="order-item-line"><span>${esc(i.beat_title)}<br><small>${esc(({mp3:'MP3',wav:'WAV',stems:'WAV + Stems'})[i.license]||i.license)}</small></span><strong>${rub(i.price)}</strong></div>`).join('')}${d.downloads.length?'<h4>Твои файлы</h4>'+d.downloads.map(x=>`<a class="download-link" href="${x.url}">↓ ${esc(x.beat_title)} — ${esc(x.license)}</a>`).join(''):'<p class="hint">Файлы не скачиваются автоматически. После ручной проверки оплаты администратор отправит выбранные файлы на указанный Telegram.</p>'}`;
+    const status=({pending:'Ожидает оплаты',paid:'Оплата подтверждена',delivered:'Оплата подтверждена · файлы готовы к скачиванию'})[d.order.status]||d.order.status;
+    $('#orderDetails').innerHTML=`<div class="order-status">${esc(status)}</div><p class="hint">Заказ ${esc(d.order.public_code)} · ${rub(d.order.total_amount)}<br>Telegram: <strong>${esc(d.order.customer_telegram||'не указан')}</strong></p>${d.items.map(i=>`<div class="order-item-line"><span>${esc(i.beat_title)}<br><small>${esc(({mp3:'MP3',wav:'WAV',stems:'WAV + Stems'})[i.license]||i.license)}</small></span><strong>${rub(i.price)}</strong></div>`).join('')}${d.downloads.length?'<h4>Твои файлы</h4>'+d.downloads.map(x=>`<a class="download-link" href="${x.url}">↓ ${esc(x.beat_title)} — ${esc(x.license)}</a>`).join(''):(d.order.status==='pending'?'<p class="hint">Ссылки на скачивание появятся после подтверждения оплаты администратором.</p>':'<p class="hint">Для этого заказа не найдены прикреплённые файлы. Свяжись с администратором магазина.</p>')}`;
     showModal('orderModal');
   }catch(e){toast(e.message,true)}
 }
@@ -348,7 +349,7 @@ async function loadSiteContent(){
     const licenseDefs=[['mp3','MP3','Лицензия MP3 для быстрого старта.'],['wav','WAV','WAV-файл в высоком качестве.'],['stems','WAV + STEMS','WAV и отдельные дорожки для гибкой работы со сведением.']];
     if(licenseCards)licenseCards.innerHTML=licenseDefs.map(([key,title,fallback])=>{const item=licenseInfo.find(x=>String(x.license).toLowerCase()===key)||{};const terms=String(item.terms||'').trim();return `<article class="public-license-card">${item.cover_key?`<img class="public-license-cover" src="${esc(media(item.cover_key))}" alt="Обложка лицензии ${title}" loading="lazy">`:''}<div class="public-license-card-body"><p class="eyebrow">LICENSE OPTION</p><h3>${title}</h3><section class="public-license-terms is-open"><h4>Условия лицензии</h4><p>${esc(terms||'Условия лицензии пока не добавлены.')}</p></section></div></article>`}).join('');
     if(serviceDesc)serviceDesc.textContent=d.content?.services_description||'';
-    if(list)list.innerHTML=(d.services||[]).length?d.services.map(s=>`<article class="service-card">${s.cover_key?`<img class="service-cover" src="${esc(s.cover_key)}" alt="">`:''}<h3>${esc(s.title)}</h3>${s.description?`<p>${esc(s.description)}</p>`:''}<strong>${rub(s.price||0)}</strong></article>`).join(''):'<p class="content-description">Список услуг скоро появится.</p>';
+    const services=(d.services||[]).filter(s=>Boolean(s.active));const section=$('#services');if(section)section.classList.toggle('hidden',services.length===0);if(list)list.innerHTML=services.map(s=>`<article class="service-card">${s.cover_key?`<img class="service-cover" src="${esc(s.cover_key)}" alt="">`:''}<h3>${esc(s.title)}</h3>${s.description?`<p>${esc(s.description)}</p>`:''}<strong>${rub(s.price||0)}</strong></article>`).join('');
   }catch(e){console.warn('Не удалось загрузить описания:',e.message)}
 }
 async function loadAdminContent(){
@@ -380,10 +381,10 @@ function switchAdminTab(tab){
 async function loadAdminOrders(){
   try{
     const d=await api('admin/orders');
-    $('#adminOrders').innerHTML=d.orders.length?'<div class="admin-orders-list">'+d.orders.map(o=>`<div class="admin-order"><div><strong>${esc(o.public_code)} · ${rub(o.total_amount)}</strong><small>${esc(o.customer_name)} ${esc(o.customer_telegram)} · ${esc(o.created_at)} · ${esc(o.status)}</small></div><div class="admin-actions">${o.status==='pending'?`<button class="small-btn" data-paid="${o.id}">Подтвердить оплату</button>`:''}${o.status==='paid'?`<button class="small-btn" data-delivered="${o.id}">Отметить выданным</button>`:''}</div></div>`).join('')+'</div>':'<p class="hint">Заказов пока нет.</p>';
+    $('#adminOrders').innerHTML=d.orders.length?'<div class="admin-orders-list">'+d.orders.map(o=>`<div class="admin-order"><div><strong>${esc(o.public_code)} · ${rub(o.total_amount)}</strong><small>${esc(o.customer_name)} ${esc(o.customer_telegram)} · ${esc(o.created_at)} · ${esc(o.status)}</small></div><div class="admin-actions">${o.status==='pending'?`<button class="small-btn" data-paid="${o.id}">Подтвердить оплату</button>`:''}${o.status==='delivered'?`<span class="hint">Файлы доступны покупателю</span>`:''}</div></div>`).join('')+'</div>':'<p class="hint">Заказов пока нет.</p>';
     $$('[data-paid]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Подтвердить, что деньги реально поступили?'))return;
-      try{await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast('Оплата подтверждена · бит снят с продажи');loadAdminOrders();loadAdminBeats();loadCatalog()}
+      try{await api(`admin/orders/${b.dataset.paid}/paid`,{method:'POST',body:'{}'});toast('Оплата подтверждена · файлы автоматически выданы');loadAdminOrders();loadAdminBeats();loadCatalog()}
       catch(e){toast(e.message,true)}
     });
     $$('[data-delivered]').forEach(b=>b.onclick=async()=>{
@@ -439,6 +440,7 @@ $('#checkoutOpen').onclick=()=>{
   $('#checkoutForm').classList.remove('hidden');
   showModal('checkoutModal');
 };
+document.querySelectorAll('input[name=deliveryMethod]').forEach(el=>el.addEventListener('change',()=>{const tg=document.querySelector('input[name=deliveryMethod]:checked')?.value==='telegram';$('#customerTelegramLabel').classList.toggle('hidden',!tg);$('#customerTelegram').required=tg;if(!tg)$('#customerTelegram').value='';}));
 $('#checkoutForm').addEventListener('submit',checkout);
 $('#profileOpen').onclick=openProfile;
 $('#adminPanelOpen').onclick=()=>{showModal('adminModal');$('#authModalTitle').textContent='Админ-панель';$('#profileApp').classList.add('hidden');$('#adminLogin').classList.add('hidden');if(state.admin){$('#adminApp').classList.remove('hidden');switchAdminTab('add');}else{checkAuth();}};
@@ -501,10 +503,15 @@ $('#beatForm').addEventListener('submit', async e => {
     };
 
     if (!fields.title) throw new Error('Укажи название бита.');
-    if (!getFile('demo')) throw new Error('Загрузи демо-файл. Полные MP3/WAV/STEMS загружать не нужно.');
+    if (!getFile('demo')) throw new Error('Загрузи демо-файл.');
+    const masterRequirements=[['mp3_price','master_mp3','MP3','.mp3'],['wav_price','master_wav','WAV','.wav'],['stems_price','master_stems','STEMS','.zip']];
+    for(const [priceField,fileField,label,ext] of masterRequirements){const file=getFile(fileField);if(Number(getValue(priceField))>0&&!file)throw new Error(`Добавь файл ${label}: лицензия стоит больше 0 ₽.`);if(file&&!file.name.toLowerCase().endsWith(ext))throw new Error(`Для ${label} нужен файл с расширением ${ext}.`);}
 
     const uploads = [
-      {field:'demo', type:'demo', key:'demo_key', label:'Демо'}
+      {field:'demo', type:'demo', key:'demo_key', label:'Демо'},
+      {field:'master_mp3', type:'mp3', key:'mp3_key', label:'Полный MP3'},
+      {field:'master_wav', type:'wav', key:'wav_key', label:'Мастер WAV'},
+      {field:'master_stems', type:'stems', key:'stems_key', label:'ZIP STEMS'}
     ];
     const uploaded = {};
 

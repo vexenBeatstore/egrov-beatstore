@@ -240,19 +240,21 @@ function licenseInfo(beat, license) {
     wav: ["WAV", beat.wav_price, beat.wav_key],
     stems: ["WAV + Stems", beat.stems_price, beat.stems_key],
   };
-
   const x = map[license];
-  if (!x || Number(x[1]) <= 0) return null;
-
-  // Discounts are disabled in EGROV BeatStore: license prices are fixed.
+  // A paid license is only offered when its actual master file is attached.
+  if (!x || Number(x[1]) <= 0 || !x[2]) return null;
   return {
     label: x[0],
     price: Math.max(0, Math.round(Number(x[1]) || 0)),
-    file_key: null,
+    file_key: x[2],
   };
 }
 
 async function handle(request, env) {
+  // Safe additive order-delivery migration; existing orders and statuses are preserved.
+  try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN delivery_method TEXT NOT NULL DEFAULT 'site'").run(); } catch (_) {}
+  try { await env.DB.prepare("ALTER TABLE orders ADD COLUMN telegram_chat_id TEXT NOT NULL DEFAULT ''").run(); } catch (_) {}
+
   if (!env.DB) {
     return fail("Не настроена привязка D1 в Cloudflare.", 500);
   }
@@ -537,9 +539,9 @@ async function handle(request, env) {
 
         return {
           ...publicBeat,
-          has_mp3: Number(beat.mp3_price) > 0,
-          has_wav: Number(beat.wav_price) > 0,
-          has_stems: Number(beat.stems_price) > 0,
+          has_mp3: Number(beat.mp3_price) > 0 && Boolean(beat.mp3_key),
+          has_wav: Number(beat.wav_price) > 0 && Boolean(beat.wav_key),
+          has_stems: Number(beat.stems_price) > 0 && Boolean(beat.stems_key),
           licenses,
         };
       }),
@@ -558,12 +560,17 @@ async function handle(request, env) {
     }
 
     const name = String(data.customer_name || "").trim().slice(0, 100);
+    const deliveryMethod = data.delivery_method === "telegram" ? "telegram" : "site";
     const telegram = String(data.customer_telegram || "").trim().slice(0, 80);
     const items = Array.isArray(data.items) ? data.items : [];
 
-    if (name.length < 2 || telegram.length < 2 || !items.length || items.length > 20) {
-      return fail("Укажите имя, Telegram username и добавьте в корзину хотя бы один бит.");
+    if (name.length < 2 || !items.length || items.length > 20) {
+      return fail("Укажите имя и добавьте в корзину хотя бы один бит.");
     }
+    if (deliveryMethod === "telegram" && !/^@[A-Za-z0-9_]{5,32}$/.test(telegram)) {
+      return fail("Для выдачи в Telegram укажи корректный username в формате @username.");
+    }
+    if (deliveryMethod === "site") { /* Telegram is optional for website delivery. */ }
 
     const resolved = [];
     let total = 0;
@@ -601,10 +608,10 @@ async function handle(request, env) {
 
     const result = await env.DB.prepare(
       `INSERT INTO orders
-       (public_code,access_token_hash,customer_name,customer_telegram,total_amount,status)
-       VALUES (?,?,?,?,?,'pending')`
+       (public_code,access_token_hash,customer_name,customer_telegram,total_amount,status,delivery_method)
+       VALUES (?,?,?,?,?,'pending',?)`
     )
-      .bind(code, tokenHash, name, telegram, total)
+      .bind(code, tokenHash, name, deliveryMethod === "telegram" ? telegram : "", total, deliveryMethod)
       .run();
 
     const orderId = result.meta.last_row_id;
@@ -635,6 +642,7 @@ async function handle(request, env) {
       bank_details: env.BANK_DETAILS || "2204321100976943\nБанк: Ozon Банк\nПолучатель: Ярослав",
       recipient: env.PAYMENT_RECIPIENT || "Ярослав",
       status: "pending",
+      delivery_method: deliveryMethod,
     });
   }
 
@@ -671,12 +679,18 @@ async function handle(request, env) {
     if (!order) return fail("Заказ не найден.", 404);
 
     const { results = [] } = await env.DB.prepare(
-      "SELECT beat_title,license,price FROM order_items WHERE order_id=?"
-    )
-      .bind(order.id)
-      .all();
+      "SELECT id,beat_title,license,price,file_key FROM order_items WHERE order_id=? ORDER BY id"
+    ).bind(order.id).all();
 
-    return json({ order, items: results, downloads: [] });
+    const downloads = ["paid", "delivered"].includes(order.status)
+      ? results.filter(item => item.file_key).map(item => ({
+          item_id: item.id,
+          beat_title: item.beat_title,
+          license: item.license,
+          url: `/api/download/${order.id}/${item.id}?token=${encodeURIComponent(token)}`,
+        }))
+      : [];
+    return json({ order, items: results.map(({ file_key, ...item }) => item), downloads });
   }
 
   /* ---------------- SECURE FILE DOWNLOAD ---------------- */
@@ -684,8 +698,6 @@ async function handle(request, env) {
   const downloadMatch = path.match(/^download\/(\d+)\/(\d+)$/);
 
   if (downloadMatch && method === "GET") {
-    return fail("Файлы выдаются вручную администратором в Telegram.", 403);
-    /* Legacy download handler intentionally disabled: paid files are delivered manually. */
     const orderId = Number(downloadMatch[1]);
     const itemId = Number(downloadMatch[2]);
     const token = url.searchParams.get("token") || "";
@@ -721,16 +733,15 @@ async function handle(request, env) {
 
     if (!obj) return fail("Файл не найден в хранилище.", 404);
 
+    const extension = row.license === "wav" ? ".wav" : row.license === "stems" ? ".zip" : ".mp3";
     const safeName = `${row.beat_title}-${row.license}`
       .replace(/[\\/"\r\n]/g, "_")
       .slice(0, 150);
 
     return new Response(obj.body, {
       headers: {
-        "Content-Type":
-          obj.headers.get("Content-Type") || "application/octet-stream",
-        "Content-Disposition":
-          `attachment; filename*=UTF-8''${encodeURIComponent(safeName + ".bin")}`,
+        "Content-Type": row.license === "wav" ? "audio/wav" : row.license === "stems" ? "application/zip" : (obj.headers.get("Content-Type") || "audio/mpeg"),
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(safeName + extension)}`,
         "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff",
       },
@@ -814,18 +825,13 @@ async function handle(request, env) {
     const file = form.get("file");
     const type = String(form.get("type") || "");
 
-    const allowed = {
-      cover: "covers",
-      demo: "demos",
-    };
-
-    if (!allowed[type]) {
-      return fail("Неизвестный тип файла.");
-    }
-
-    if (!file || typeof file === "string" || !file.size) {
-      return fail("Файл не выбран.");
-    }
+    const allowed = { cover: "covers", demo: "demos", mp3: "masters", wav: "masters", stems: "masters" };
+    if (!allowed[type]) return fail("Неизвестный тип файла.");
+    if (!file || typeof file === "string" || !file.size) return fail("Файл не выбран.");
+    const filename = String(file.name || "").toLowerCase();
+    if (type === "mp3" && !filename.endsWith(".mp3")) return fail("Для лицензии MP3 загрузи файл с расширением .mp3.");
+    if (type === "wav" && !filename.endsWith(".wav")) return fail("Для лицензии WAV загрузи файл с расширением .wav.");
+    if (type === "stems" && !filename.endsWith(".zip")) return fail("Для STEMS загрузи ZIP-архив с дорожками.");
 
     try {
       const key = await storageUpload(file, env, allowed[type]);
@@ -992,7 +998,7 @@ async function handle(request, env) {
       ).bind(id).all();
 
       await env.DB.prepare(
-        "UPDATE orders SET status='paid',paid_at=CURRENT_TIMESTAMP WHERE id=?"
+        "UPDATE orders SET status='delivered',paid_at=CURRENT_TIMESTAMP,delivered_at=CURRENT_TIMESTAMP WHERE id=?"
       ).bind(id).run();
 
       for (const item of items) {
