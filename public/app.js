@@ -280,7 +280,7 @@ async function checkAuth(){
   }catch{
     state.user=null;state.admin=false;
     $('#profileOpen').textContent='Вход';
-    $('#adminPanelOpen').classList.remove('hidden');
+    $('#adminPanelOpen').classList.add('hidden');
     $('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');
   }
 }
@@ -554,7 +554,7 @@ $('#beatForm').addEventListener('submit', async e => {
   }
 });
 
-$('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;state.favorites=[];updateFavoriteCount();$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.remove('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
+$('#profileLogout').onclick=async()=>{try{await api('auth/logout',{method:'POST',body:'{}'});state.user=null;state.admin=false;state.favorites=[];updateFavoriteCount();$('#profileOpen').textContent='Вход';$('#adminPanelOpen').classList.add('hidden');$('#profileApp').classList.add('hidden');$('#adminApp').classList.add('hidden');$('#adminLogin').classList.remove('hidden');hideModal('adminModal');toast('Вы вышли из аккаунта');}catch(e){toast(e.message||'Не удалось выйти',true)}};
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchAdminTab(b.dataset.tab)));
 $('#playlistForm')?.addEventListener('submit',createPlaylist);
 ['playlistSearch','playlistGenre','playlistSort'].forEach(id=>$('#'+id)?.addEventListener(id==='playlistSearch'?'input':'change',renderPlaylists));
@@ -564,58 +564,6 @@ $$('[data-close]').forEach(b=>b.addEventListener('click',()=>{
   else if(x==='favorites')hideModal('favoritesModal');
   else hideModal(({checkout:'checkoutModal',order:'orderModal',admin:'adminModal'})[x]);
 }));
-// Public sections are presented as separate navigation tabs while retaining existing IDs and app logic.
-const publicPageSections = {
-  home: ['home'],
-  catalog: ['catalog', 'licenses-description'],
-  playlists: ['playlists'],
-  services: ['services'],
-  about: ['about', 'contact-social']
-};
-function showPublicPage(page, updateHash=false) {
-  const validPage = Object.prototype.hasOwnProperty.call(publicPageSections, page) ? page : 'home';
-  const visibleIds = new Set(publicPageSections[validPage]);
-  ['home','catalog','licenses-description','playlists','services','about','contact-social'].forEach(id => {
-    const section = document.getElementById(id);
-    if (section) section.classList.toggle('hidden', !visibleIds.has(id));
-  });
-  // The services section was initially hidden until its data is loaded; the route controls visibility.
-  document.querySelectorAll('.nav-page-link').forEach(link => {
-    const active = link.getAttribute('href') === '#' + validPage;
-    link.classList.toggle('active', active);
-    if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
-  });
-  document.body.classList.remove('admin-page');
-  if (updateHash && location.hash !== '#' + validPage) history.replaceState(null, '', '#' + validPage);
-  window.scrollTo({top: 0, behavior: 'instant'});
-}
-function handlePublicRoute() {
-  const page = (location.hash || '#home').slice(1);
-  if (page === 'admin') {
-    showPublicPage('home');
-    const adminButton = document.getElementById('adminPanelOpen');
-    if (adminButton) adminButton.click();
-    history.replaceState(null, '', '#home');
-    return;
-  }
-  showPublicPage(page);
-}
-document.querySelectorAll('.nav-page-link, a.brand, .hero .primary-btn, .about-copy .primary-btn').forEach(link => {
-  link.addEventListener('click', event => {
-    const href = link.getAttribute('href') || '';
-    if (!href.startsWith('#')) return;
-    const page = href.slice(1);
-    if (Object.prototype.hasOwnProperty.call(publicPageSections, page)) {
-      event.preventDefault();
-      if (location.hash !== href) history.pushState(null, '', href);
-      showPublicPage(page);
-    }
-  });
-});
-window.addEventListener('hashchange', handlePublicRoute);
-window.addEventListener('popstate', handlePublicRoute);
-handlePublicRoute();
-
 $('#year').textContent=new Date().getFullYear();
 loadSiteContent();
 if(document.body.classList.contains('admin-page')){openAdmin();} else {checkAuth();}

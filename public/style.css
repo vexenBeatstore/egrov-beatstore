@@ -840,24 +840,14 @@ main,footer,.topbar{min-width:0}
 .public-license-terms p{margin:12px 0 0;color:#aeb0b5;line-height:1.7;white-space:pre-wrap}
 @media(max-width:760px){.public-license-grid{grid-template-columns:1fr}.public-license-card-body{padding:20px}}
 
-/* Language / region switcher */
-.region-btn{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;background:#111;border:1px solid #303030;border-radius:8px;color:#e8e8e8;font:600 11px 'DM Sans',sans-serif;white-space:nowrap;cursor:pointer;transition:border-color .18s,background .18s}
-.region-btn:hover{border-color:#777;background:#191919}
-.region-card{max-width:430px}
-.region-label{display:block;margin:18px 0 8px;color:#aaa;font-size:11px}
-.region-select{width:100%;height:46px;padding:0 12px;border:1px solid #303030;border-radius:8px;background:#111;color:#eee;font:500 13px 'DM Sans',sans-serif;outline:none}
-.region-select:focus{border-color:#888}
-@media(max-width:760px){.region-btn{height:34px;padding:0 8px;font-size:10px}.topbar{gap:8px}.topbar nav{gap:8px}}
-
 /* Header controls stay together and in a predictable order on desktop and mobile. */
 .topbar nav.topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:nowrap;min-width:0}
 .topbar-actions #cartOpen{order:2;white-space:nowrap}
 .topbar-actions #profileOpen{order:1;white-space:nowrap}
 .topbar-actions #myOrderOpen{order:3;white-space:nowrap}
 .topbar-actions #adminPanelOpen{order:4;white-space:nowrap}
-.topbar-actions #regionOpen{order:5;flex:0 0 auto}
-@media(max-width:760px){.topbar{padding:0 12px;gap:8px}.topbar .brand-logo{width:95px;height:52px}.topbar nav.topbar-actions{gap:6px}.topbar-actions .nav-admin{padding:8px 9px;font-size:9px;letter-spacing:.2px}.topbar-actions .nav-link-btn{font-size:10px}.topbar-actions .cart-btn{padding:7px 9px;font-size:10px}.topbar-actions .cart-btn span{min-width:17px;height:17px;margin-left:3px}.topbar-actions .region-btn{padding:0 7px;font-size:9px}}
-@media(max-width:420px){.topbar .brand-logo{width:72px}.topbar nav.topbar-actions{gap:5px}.topbar-actions #myOrderOpen{font-size:9px}.topbar-actions .nav-admin{padding:7px 6px}.topbar-actions .region-btn{font-size:8px;padding:0 5px}}
+@media(max-width:760px){.topbar{padding:0 12px;gap:8px}.topbar .brand-logo{width:95px;height:52px}.topbar nav.topbar-actions{gap:6px}.topbar-actions .nav-admin{padding:8px 9px;font-size:9px;letter-spacing:.2px}.topbar-actions .nav-link-btn{font-size:10px}.topbar-actions .cart-btn{padding:7px 9px;font-size:10px}.topbar-actions .cart-btn span{min-width:17px;height:17px;margin-left:3px}}
+@media(max-width:420px){.topbar .brand-logo{width:72px}.topbar nav.topbar-actions{gap:5px}.topbar-actions #myOrderOpen{font-size:9px}.topbar-actions .nav-admin{padding:7px 6px}}
 
 /* EGROV mobile polish: responsive presentation only; application logic unchanged */
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 112px; }
@@ -870,10 +860,9 @@ section[id] { scroll-margin-top: 112px; }
   .topbar { height:auto; min-height:0; padding:9px 14px 10px; display:flex; flex-wrap:wrap; gap:8px 12px; }
   .topbar .brand { flex:0 0 auto; }
   .topbar .brand-logo { width:100px; height:42px; }
-  .topbar nav.topbar-actions { order:3; flex:1 0 100%; width:100%; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; justify-content:stretch; overflow:visible; padding-top:8px; border-top:1px solid #ffffff12; }
-  .topbar-actions #profileOpen,.topbar-actions #cartOpen,.topbar-actions #myOrderOpen,.topbar-actions #adminPanelOpen,.topbar-actions #regionOpen { min-width:0; width:100%; max-width:100%; min-height:38px; height:auto; display:flex; align-items:center; justify-content:center; padding:6px 4px; border-radius:8px; text-align:center; white-space:normal; overflow-wrap:anywhere; line-height:1.2; font-size:9px; letter-spacing:0; }
+  .topbar nav.topbar-actions { order:3; flex:1 0 100%; width:100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; justify-content:stretch; overflow:visible; padding-top:8px; border-top:1px solid #ffffff12; }
+  .topbar-actions #profileOpen,.topbar-actions #cartOpen,.topbar-actions #myOrderOpen,.topbar-actions #adminPanelOpen { min-width:0; width:100%; max-width:100%; min-height:38px; height:auto; display:flex; align-items:center; justify-content:center; padding:6px 4px; border-radius:8px; text-align:center; white-space:normal; overflow-wrap:anywhere; line-height:1.2; font-size:9px; letter-spacing:0; }
   .topbar-actions .cart-btn span { min-width:16px; height:16px; margin-left:3px; }
-  .topbar-actions .region-btn { gap:3px; }
   .hero { grid-template-columns:minmax(0,1fr); min-height:0; padding:48px 20px 36px; gap:0; }
   .hero-copy { width:100%; max-width:none; }
   .hero h1 { font-size:clamp(36px,10vw,60px); line-height:.99; letter-spacing:-1.8px; overflow-wrap:anywhere; }
@@ -1057,28 +1046,17 @@ footer{border-top-color:#ffffff14;color:#888}
 .delivery-option input{margin-top:4px;accent-color:#fff}
 .delivery-option small{display:block;color:var(--muted,#999);font-size:.78rem;margin-top:4px}
 
-/* EGROV homepage additions */
-.nav-page-link{white-space:nowrap;color:#A0A0A0;font-size:10px;letter-spacing:.5px}.nav-page-link:hover{color:#fff}
-.featured-intro{padding:78px 9%;border-bottom:1px solid #242424;display:grid;grid-template-columns:.75fr 1.25fr;gap:6%;align-items:center}.featured-title h2,.contact-social-heading h2{font:700 clamp(30px,4vw,54px)/1 'Space Grotesk',sans-serif;letter-spacing:-2px;margin:0}.featured-title h2 em,.contact-social-heading h2 em{font-style:normal;color:#A0A0A0}.featured-title>p:last-child,.contact-social-heading>p:last-child{font-size:12px;color:#A0A0A0;line-height:1.8;max-width:330px}.featured-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}.featured-card{position:relative;min-height:220px;padding:22px;border:1px solid #333;background:radial-gradient(ellipse at 80% 20%,#292929 0,#101010 58%);display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;overflow:hidden;transition:transform .2s,border-color .2s}.featured-card:hover{transform:translateY(-4px);border-color:#888}.featured-card-alt{background:radial-gradient(ellipse at 20% 70%,#252525 0,#101010 62%)}.featured-number{font:600 12px 'Space Grotesk';color:#888}.featured-tag,.featured-bottom,.about-signature,.contact-social-index,.contact-social-empty{font-size:9px;letter-spacing:1.4px;color:#888}.featured-card h3{font:700 clamp(25px,3vw,38px) 'Space Grotesk';letter-spacing:-1.5px;margin:15px 0}.featured-bottom{color:#eee}.about-section{align-items:start}.about-copy{max-width:620px;color:#aaa;font-size:13px;line-height:1.95}.about-copy p{margin:0 0 16px}.about-copy strong{color:#fff}.about-signature{margin-top:22px}.about-copy .primary-btn{margin-top:10px}.contact-social-section{padding:82px 9%;border-top:1px solid #242424}.contact-social-heading{max-width:720px}.contact-social-heading>p:last-child{max-width:520px}.contact-social-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:35px}.contact-social-item{padding:26px;border:1px solid #2c2c2c;background:#0c0c0c;min-height:175px}.contact-social-item h3{font:600 24px 'Space Grotesk';margin:22px 0 8px}.contact-social-item p{font-size:12px;color:#888}.contact-social-empty{display:inline-block;margin-top:10px;border-bottom:1px solid #444;padding-bottom:6px}
-@media(max-width:1000px){.topbar{padding:0 4%}.topbar-actions{gap:12px;flex-wrap:wrap;justify-content:flex-end}.nav-page-link{display:none}.featured-intro{padding:55px 6%;grid-template-columns:1fr;gap:25px}.contact-social-section{padding:55px 6%}}
-@media(max-width:600px){.featured-cards,.contact-social-columns{grid-template-columns:1fr}.featured-card{min-height:180px}.contact-social-heading h2{font-size:32px}.about-section{grid-template-columns:1fr;gap:20px}}
-
-/* Separate public navigation tabs */
-.topbar-actions .nav-page-link.active{color:#fff;position:relative}
-.topbar-actions .nav-page-link.active::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:1px;background:#fff}
-
-
-/* EGROV: section navigation moved out of the top bar; Russian-only interface. */
-.topbar .topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:nowrap;min-width:0}
-.topbar-actions #profileOpen{order:1}.topbar-actions #cartOpen{order:2;white-space:nowrap}.topbar-actions #myOrderOpen{order:3;white-space:nowrap}.topbar-actions #adminPanelOpen{order:4;white-space:nowrap}
-.page-nav-dock{position:fixed;z-index:20;left:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;padding:9px;background:rgba(12,12,12,.92);border:1px solid #ffffff18;border-radius:14px;backdrop-filter:blur(18px);box-shadow:0 12px 45px #0008}
-.page-nav-dock .nav-page-link{display:flex;align-items:center;gap:12px;min-width:138px;padding:12px 13px;border-radius:9px;color:#a0a0a0;font-size:11px;letter-spacing:.3px;transition:background .18s,color .18s}
-.page-nav-dock .nav-page-link:hover,.page-nav-dock .nav-page-link.active{background:#ffffff12;color:#fff}
-.page-nav-dock .nav-page-link.active{box-shadow:inset 2px 0 #fff}
-.page-nav-icon{width:22px;height:22px;display:grid;place-items:center;border:1px solid #ffffff20;border-radius:6px;color:#fff;font-size:15px;flex:0 0 22px}
-.page-nav-dock .nav-page-link.active .page-nav-icon{background:#fff;color:#050505;border-color:#fff}
-@media(min-width:1200px){main,footer{padding-left:0}}
-@media(max-width:1100px){.page-nav-dock{left:10px}.page-nav-dock .nav-page-link{min-width:0;padding:10px;gap:8px}.page-nav-dock .nav-page-link span:last-child{display:none}.page-nav-icon{width:30px;height:30px;flex-basis:30px}}
-@media(max-width:760px){.page-nav-dock{left:50%;top:auto;bottom:10px;transform:translateX(-50%);width:min(520px,calc(100% - 20px));flex-direction:row;justify-content:space-around;gap:3px;padding:6px;border-radius:13px}.page-nav-dock .nav-page-link{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:5px 2px;font-size:9px;min-width:0}.page-nav-dock .nav-page-link span:last-child{display:block}.page-nav-icon{width:25px;height:25px;flex-basis:25px;font-size:13px}.page-nav-dock .nav-page-link.active{box-shadow:inset 0 -2px #fff}.topbar{height:auto;min-height:64px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px}.topbar .brand-logo{width:92px;height:42px}.topbar nav.topbar-actions{order:2;flex:1 1 100%;width:100%;display:flex;justify-content:space-between;gap:6px;overflow:visible;padding-top:7px;border-top:1px solid #ffffff12}.topbar-actions .nav-admin{padding:8px 9px;font-size:9px;letter-spacing:0}.topbar-actions .nav-link-btn{font-size:10px}.topbar-actions .cart-btn{padding:7px 9px;font-size:10px}.topbar-actions .cart-btn span{min-width:17px;height:17px;margin-left:3px}body{padding-bottom:72px}}
-@media(max-width:380px){.topbar-actions .nav-admin{padding:7px 6px;font-size:8px}.topbar-actions .cart-btn{padding:7px 6px}.page-nav-dock .nav-page-link{font-size:8px}}
-.admin-page .page-nav-dock{display:none}
+/* EGROV about section and future contact/community links */
+.about-section{display:block;padding:76px 9%;background:#070707;border-top:1px solid #242424}
+.about-main{display:grid;grid-template-columns:.8fr 1.2fr;gap:9%;align-items:start}
+.about-heading h2{font:700 clamp(36px,5vw,64px)/1 'Space Grotesk',sans-serif;letter-spacing:-2.5px;margin:0}
+.about-copy p{font-size:14px;line-height:1.95;color:#b5b5b5;margin:0 0 17px;max-width:760px}
+.about-copy p:first-child{color:#fff;font-size:16px}
+.about-catalog-link{margin-top:8px}
+.about-links{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:58px}
+.about-link-card{position:relative;min-height:190px;border:1px solid #292929;background:#0b0b0b;padding:25px 27px}
+.about-link-index{font-size:9px;letter-spacing:1.8px;color:#777}
+.about-link-card h3{font:700 20px 'Space Grotesk',sans-serif;letter-spacing:-.4px;margin:24px 0 9px}
+.about-link-card p{font-size:12px;line-height:1.7;color:#888;margin:0}
+.about-link-placeholder{height:1px;background:#303030;margin-top:22px;width:100%}
+@media(max-width:700px){.about-section{padding:48px 5%}.about-main{grid-template-columns:1fr;gap:22px}.about-heading h2{font-size:38px}.about-links{grid-template-columns:1fr;margin-top:36px}.about-link-card{min-height:165px;padding:22px}.about-copy p{font-size:13px}.about-copy p:first-child{font-size:15px}}
