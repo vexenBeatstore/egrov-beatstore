@@ -1066,3 +1066,19 @@ footer{border-top-color:#ffffff14;color:#888}
 /* Separate public navigation tabs */
 .topbar-actions .nav-page-link.active{color:#fff;position:relative}
 .topbar-actions .nav-page-link.active::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:1px;background:#fff}
+
+
+/* EGROV: section navigation moved out of the top bar; Russian-only interface. */
+.topbar .topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:nowrap;min-width:0}
+.topbar-actions #profileOpen{order:1}.topbar-actions #cartOpen{order:2;white-space:nowrap}.topbar-actions #myOrderOpen{order:3;white-space:nowrap}.topbar-actions #adminPanelOpen{order:4;white-space:nowrap}
+.page-nav-dock{position:fixed;z-index:20;left:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;padding:9px;background:rgba(12,12,12,.92);border:1px solid #ffffff18;border-radius:14px;backdrop-filter:blur(18px);box-shadow:0 12px 45px #0008}
+.page-nav-dock .nav-page-link{display:flex;align-items:center;gap:12px;min-width:138px;padding:12px 13px;border-radius:9px;color:#a0a0a0;font-size:11px;letter-spacing:.3px;transition:background .18s,color .18s}
+.page-nav-dock .nav-page-link:hover,.page-nav-dock .nav-page-link.active{background:#ffffff12;color:#fff}
+.page-nav-dock .nav-page-link.active{box-shadow:inset 2px 0 #fff}
+.page-nav-icon{width:22px;height:22px;display:grid;place-items:center;border:1px solid #ffffff20;border-radius:6px;color:#fff;font-size:15px;flex:0 0 22px}
+.page-nav-dock .nav-page-link.active .page-nav-icon{background:#fff;color:#050505;border-color:#fff}
+@media(min-width:1200px){main,footer{padding-left:0}}
+@media(max-width:1100px){.page-nav-dock{left:10px}.page-nav-dock .nav-page-link{min-width:0;padding:10px;gap:8px}.page-nav-dock .nav-page-link span:last-child{display:none}.page-nav-icon{width:30px;height:30px;flex-basis:30px}}
+@media(max-width:760px){.page-nav-dock{left:50%;top:auto;bottom:10px;transform:translateX(-50%);width:min(520px,calc(100% - 20px));flex-direction:row;justify-content:space-around;gap:3px;padding:6px;border-radius:13px}.page-nav-dock .nav-page-link{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:5px 2px;font-size:9px;min-width:0}.page-nav-dock .nav-page-link span:last-child{display:block}.page-nav-icon{width:25px;height:25px;flex-basis:25px;font-size:13px}.page-nav-dock .nav-page-link.active{box-shadow:inset 0 -2px #fff}.topbar{height:auto;min-height:64px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px}.topbar .brand-logo{width:92px;height:42px}.topbar nav.topbar-actions{order:2;flex:1 1 100%;width:100%;display:flex;justify-content:space-between;gap:6px;overflow:visible;padding-top:7px;border-top:1px solid #ffffff12}.topbar-actions .nav-admin{padding:8px 9px;font-size:9px;letter-spacing:0}.topbar-actions .nav-link-btn{font-size:10px}.topbar-actions .cart-btn{padding:7px 9px;font-size:10px}.topbar-actions .cart-btn span{min-width:17px;height:17px;margin-left:3px}body{padding-bottom:72px}}
+@media(max-width:380px){.topbar-actions .nav-admin{padding:7px 6px;font-size:8px}.topbar-actions .cart-btn{padding:7px 6px}.page-nav-dock .nav-page-link{font-size:8px}}
+.admin-page .page-nav-dock{display:none}
