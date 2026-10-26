@@ -1089,3 +1089,16 @@ footer{border-top-color:#ffffff14;color:#888}
 @media(max-width:420px){
  .topbar-actions #profileOpen,.topbar-actions #cartOpen,.topbar-actions #myOrderOpen,.topbar-actions #adminPanelOpen{font-size:8px;padding:7px 4px;}
 }
+
+/* EGROV contact and community links — monochrome brand treatment */
+.about-links{align-items:stretch}
+.about-link-card{display:flex;flex-direction:column;gap:0}
+.social-link-list{display:grid;gap:9px;margin-top:20px}
+.social-link{display:flex;align-items:center;gap:13px;min-width:0;padding:13px 14px;border:1px solid #292929;border-radius:7px;background:#080808;transition:background .18s,border-color .18s,transform .18s}
+.social-link:hover{background:#141414;border-color:#777;transform:translateY(-1px)}
+.social-logo{width:21px;height:21px;flex:0 0 21px;fill:#fff;color:#fff}
+.social-link>span:nth-child(2){display:grid;gap:4px;min-width:0;flex:1}
+.social-link small{font-size:8px;letter-spacing:.14em;color:#777;font-weight:800}
+.social-link strong{font-size:12px;line-height:1.45;color:#eee;font-weight:600;overflow-wrap:anywhere}
+.social-arrow{font-size:15px;color:#888;flex:0 0 auto}
+@media(max-width:700px){.social-link{padding:12px}.social-link strong{font-size:11px}.social-link-list{margin-top:16px}}
