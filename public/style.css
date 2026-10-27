@@ -1102,3 +1102,12 @@ footer{border-top-color:#ffffff14;color:#888}
 .social-link strong{font-size:12px;line-height:1.45;color:#eee;font-weight:600;overflow-wrap:anywhere}
 .social-arrow{font-size:15px;color:#888;flex:0 0 auto}
 @media(max-width:700px){.social-link{padding:12px}.social-link strong{font-size:11px}.social-link-list{margin-top:16px}}
+
+
+/* About section — producer studio photo */
+.about-photo{position:relative;margin:28px 0 0;max-width:100%;overflow:hidden;border:1px solid #303030;background:#080808;aspect-ratio:16/10}
+.about-photo::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.72) 100%)}
+.about-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;filter:none;transition:transform .5s ease}
+.about-photo:hover img{transform:scale(1.025)}
+.about-photo figcaption{position:absolute;z-index:1;left:14px;bottom:12px;font-size:8px;letter-spacing:1.7px;color:#f2f2f2}
+@media(max-width:700px){.about-photo{margin-top:20px;aspect-ratio:16/9;max-height:280px}}
