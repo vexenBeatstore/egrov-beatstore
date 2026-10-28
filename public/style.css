@@ -1120,3 +1120,11 @@ footer{border-top-color:#ffffff14;color:#888}
 .payment-notice a{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #777;border-radius:5px;background:#f2f2f2;color:#080808;font-size:11px;font-weight:900;white-space:nowrap;transition:background .2s,color .2s}
 .payment-notice a:hover{background:#bdbdbd}
 @media(max-width:700px){.payment-notice{gap:8px;padding:13px 16px}.payment-notice-label{width:100%;font-size:8px}.payment-notice p{font-size:11px}.payment-notice a{padding:8px 12px}}
+
+/* Payment notice is intentionally shown only in the catalog and cart. */
+.catalog-payment-notice{margin:0 0 22px;justify-content:flex-start;border:1px solid #555;border-radius:6px;background:#111;padding:14px 16px}
+.cart-payment-notice{margin:16px 0 12px;display:flex;flex-direction:column;align-items:stretch;gap:8px;border:1px solid #555;border-radius:6px;padding:13px;background:#111}
+.cart-payment-notice .payment-notice-label{line-height:1.5}
+.cart-payment-notice p{font-size:11px}
+.cart-payment-notice a{justify-content:center}
+@media(max-width:700px){.catalog-payment-notice{justify-content:center;text-align:center}.cart-payment-notice{margin:12px 0;padding:12px}}
