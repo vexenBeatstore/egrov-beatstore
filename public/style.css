@@ -1111,3 +1111,12 @@ footer{border-top-color:#ffffff14;color:#888}
 .about-photo:hover img{transform:scale(1.025)}
 .about-photo figcaption{position:absolute;z-index:1;left:14px;bottom:12px;font-size:8px;letter-spacing:1.7px;color:#f2f2f2}
 @media(max-width:700px){.about-photo{margin-top:20px;aspect-ratio:16/9;max-height:280px}}
+
+
+/* Temporary payment notice — visible, responsive, and independent of store logic */
+.payment-notice{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:15px 6.5%;background:#171717;border-bottom:1px solid #555;color:#fff;text-align:center}
+.payment-notice-label{font-size:9px;font-weight:900;letter-spacing:1.5px;color:#bdbdbd}
+.payment-notice p{margin:0;font-size:12px;line-height:1.6;color:#f2f2f2}
+.payment-notice a{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #777;border-radius:5px;background:#f2f2f2;color:#080808;font-size:11px;font-weight:900;white-space:nowrap;transition:background .2s,color .2s}
+.payment-notice a:hover{background:#bdbdbd}
+@media(max-width:700px){.payment-notice{gap:8px;padding:13px 16px}.payment-notice-label{width:100%;font-size:8px}.payment-notice p{font-size:11px}.payment-notice a{padding:8px 12px}}
