@@ -1128,3 +1128,58 @@ footer{border-top-color:#ffffff14;color:#888}
 .cart-payment-notice p{font-size:11px}
 .cart-payment-notice a{justify-content:center}
 @media(max-width:700px){.catalog-payment-notice{justify-content:center;text-align:center}.cart-payment-notice{margin:12px 0;padding:12px}}
+
+/* EGROV neon refresh — visual layer only; existing DOM, IDs and JS behavior stay unchanged. */
+:root{
+  --egrov-cyan:#65F8FF;--egrov-blue:#48CFFF;--egrov-indigo:#628CFF;
+  --egrov-violet:#654BFF;--egrov-purple:#791CFF;--egrov-magenta:#A000FF;
+  --egrov-gradient:linear-gradient(100deg,#BFFFFF 0%,#65F8FF 17%,#48CFFF 34%,#628CFF 52%,#654BFF 68%,#791CFF 84%,#A000FF 100%);
+  --egrov-glow:0 0 12px #55F8FF45,0 0 30px #499CFF28,0 0 42px #851CFF20;
+}
+body{background:#000;color:#f7f9ff}
+.topbar{background:#000e;border-bottom-color:#65f8ff16;box-shadow:0 8px 28px #0008}
+.brand-logo{filter:drop-shadow(0 0 12px #499cff22);object-fit:contain;object-position:left center}
+.hero h1,.section-head h2,.about-section h2,.about-heading h2,.playlist-heading h2,.drawer-head h3,.modal-card h3{font-family:'Manrope','Arial Black',sans-serif;font-weight:900;letter-spacing:-.055em}
+.hero h1 em,.section-head h2 em,.about-section h2 em{background:var(--egrov-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.eyebrow,.player-label,.cover-id,.market-stats b{color:var(--egrov-cyan)}
+.eyebrow i,.status-dot{background:var(--egrov-cyan);box-shadow:0 0 12px #55f8ff90}
+.primary-btn{background:var(--egrov-gradient);color:#050509;border-radius:8px;box-shadow:0 0 22px #499cff18;font-weight:900;transition:transform .2s,filter .2s,box-shadow .2s}
+.primary-btn:hover{background:var(--egrov-gradient);filter:brightness(1.12);box-shadow:0 0 28px #791cff35;transform:translateY(-2px)}
+.nav-admin:hover,.cart-btn span{background:var(--egrov-gradient);color:#050509}
+.topbar-actions #profileOpen:hover,.topbar-actions #cartOpen:hover,.topbar-actions #myOrderOpen:hover,.topbar-actions #adminPanelOpen:hover{border-color:#628cff8a;box-shadow:0 0 18px #499cff16}
+.catalog-section{background:linear-gradient(180deg,#000 0%,#030307 100%)}
+.market-heading,.catalog-layout,.about-section{position:relative}
+.market-heading h2{font-weight:900;letter-spacing:-.055em}
+.beat-row,.beat-card{background:#07070b;border-color:#ffffff13;transition:border-color .2s,background .2s,box-shadow .2s,transform .2s}
+#beatGrid .beat-row:hover,.beat-card:hover{background:#0a0a10;border-color:#628cff66;box-shadow:0 0 26px #499cff0d}
+#beatGrid .track-title,.beat-title{font-weight:850;letter-spacing:-.035em}
+#beatGrid .card-play,.player-play,.global-play{background:linear-gradient(135deg,#65F8FF 0%,#48CFFF 32%,#628CFF 57%,#791CFF 100%);color:#030308;border:1px solid #8afaff65;box-shadow:0 0 18px #499cff30, inset 0 1px 0 #ffffff80;transition:transform .18s,box-shadow .18s,filter .18s}
+#beatGrid .card-play:hover,#beatGrid .card-play.is-playing,.player-play:hover,.global-play:hover{background:var(--egrov-gradient);color:#030308;filter:brightness(1.12);box-shadow:0 0 24px #499cff65,0 0 36px #791cff25;transform:scale(1.045)}
+.audio-player{background:linear-gradient(105deg,#071317 0%,#090b18 54%,#11071b 100%);border:1px solid #628cff35;border-radius:10px;box-shadow:inset 0 0 24px #499cff08}
+.audio-player.is-playing{border-color:#65f8ff8c;box-shadow:0 0 20px #499cff18,inset 0 0 26px #791cff0b}
+.player-seek,.player-volume,.global-waveform{accent-color:var(--egrov-cyan)}
+.player-seek{filter:drop-shadow(0 0 4px #499cff35)}
+#beatGrid .track-license select,#beatGrid .license-select,.license-row select{background:#05050a;border-color:#ffffff20;color:#f2f3ff;border-radius:8px}
+#beatGrid .track-license select:focus,.license-row select:focus{outline:none;border-color:#65f8ff9c;box-shadow:0 0 0 3px #65f8ff12}
+#beatGrid .add-btn,.add-btn{background:linear-gradient(100deg,#65F8FF,#48CFFF 34%,#628CFF 58%,#791CFF);border:1px solid #65f8ff65;color:#030308;border-radius:8px;font-weight:900;box-shadow:0 0 15px #499cff12}
+#beatGrid .add-btn:hover,.add-btn:hover{background:var(--egrov-gradient);border-color:#a000ff;color:#030308;box-shadow:0 0 22px #791cff25}
+.global-player{background:#030307f5;border-top:1px solid #628cff45;box-shadow:0 -8px 34px #000b,0 0 24px #499cff0a;backdrop-filter:blur(18px)}
+.global-track-copy strong{font-weight:850;letter-spacing:-.025em}
+.global-waveform{filter:drop-shadow(0 0 5px #499cff60)}
+.icon-btn{background:#0b0b12;border-color:#ffffff1c;border-radius:9px;transition:border-color .18s,color .18s,box-shadow .18s}
+.icon-btn:hover{border-color:#65f8ff80;color:#65f8ff;box-shadow:0 0 14px #499cff1a}
+.modal-card,.drawer-panel{background:#030307;border-color:#628cff26}
+.drawer-head{border-bottom-color:#628cff24}
+.payment-notice,.catalog-payment-notice,.cart-payment-notice{background:#08080d;border-color:#628cff3b}
+.payment-notice-label{color:#65f8ff}
+.payment-notice a{background:var(--egrov-gradient);border-color:#65f8ff55;color:#030308;border-radius:7px}
+.payment-notice a:hover{filter:brightness(1.12);background:var(--egrov-gradient)}
+#adminModal .admin-tabs .tab.active{background:var(--egrov-gradient);color:#030308}
+#adminModal .eyebrow:before{background:#65f8ff;box-shadow:0 0 10px #65f8ff80}
+#adminModal .primary-btn.full{background:var(--egrov-gradient);color:#030308}
+.admin-form input:focus,.admin-form textarea:focus,.admin-form select:focus,.modal-card input:focus,.modal-card select:focus,.modal-card textarea:focus{border-color:#65f8ff80;box-shadow:0 0 0 3px #65f8ff12}
+.upload-icon,.upload-symbol{color:#65f8ff}
+.social-link:hover{border-color:#628cff70;box-shadow:0 0 18px #499cff12}
+footer{background:#000;border-top-color:#628cff18}
+::selection{background:#65f8ff55;color:#fff}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
