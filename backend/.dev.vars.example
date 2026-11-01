@@ -1,0 +1,5 @@
+SESSION_SECRET=local-only-replace
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SECRET_KEY=local-only-replace
+TELEGRAM_BOT_TOKEN=local-only-replace
+ADMIN_TELEGRAM_IDS=123456789

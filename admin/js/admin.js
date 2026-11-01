@@ -1,0 +1,7 @@
+import {get,post,request} from "../../frontend/js/api.js";
+const $=s=>document.querySelector(s);let active="orders";
+function esc(s=""){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+$("#login").onclick=()=>{const login=prompt("Логин администратора");const password=prompt("Пароль");post("/auth/login",{login,password}).then(load).catch(e=>alert(e.message));};
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{active=b.dataset.tab;load();});
+async function load(){try{const me=await get("/me");if(!me.user?.is_admin)throw Error("Недостаточно прав");let data=await get(`/admin/${active}`);const rows=data.items||[];if(!rows.length){$("#content").innerHTML='<div class="empty">Нет записей.</div>';return;}const cols=Object.keys(rows[0]);$("#content").innerHTML=`<table><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}<th>Действия</th></tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(typeof r[c]==="object"?JSON.stringify(r[c]):r[c])}</td>`).join("")}<td class="actions">${active==="orders"&&r.status==="pending"?`<button data-confirm="${r.id}">Оплата</button>`:""}</td></tr>`).join("")}</tbody></table>`;$("#content").querySelectorAll("[data-confirm]").forEach(b=>b.onclick=async()=>{try{await post(`/admin/orders/${b.dataset.confirm}/confirm`,{});load();}catch(e){alert(e.message);}});}catch(e){$("#content").innerHTML=`<div class="empty">${esc(e.message)}. Авторизуйтесь администратором.</div>`;}}
+load();

@@ -1,0 +1,28 @@
+name = "racks4l-beats"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+PUBLIC_ORIGIN = "http://localhost:8787"
+TELEGRAM_BOT_USERNAME = "your_bot"
+PAYMENT_INSTRUCTIONS = "Свяжитесь с администратором для оплаты."
+SUPABASE_BUCKET_PREVIEWS = "previews"
+SUPABASE_BUCKET_PRIVATE = "private-audio"
+SUPABASE_BUCKET_STEMS = "stems"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "racks4l"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "../migrations"
+
+[env.staging]
+name = "racks4l-staging"
+[env.staging.vars]
+PUBLIC_ORIGIN = "https://staging.example.com"
+
+[env.production]
+name = "racks4l-production"
+[env.production.vars]
+PUBLIC_ORIGIN = "https://your-domain.example"
